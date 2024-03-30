@@ -1,5 +1,8 @@
 import os
 
+__import__("pysqlite3")
+import sys
+
 import streamlit as st
 from langchain.chains import ConversationalRetrievalChain
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -7,6 +10,9 @@ from langchain_community.chat_models import ChatOpenAI
 from langchain_community.document_loaders import Docx2txtLoader, PyPDFLoader, TextLoader
 from langchain_community.embeddings.openai import OpenAIEmbeddings
 from langchain_community.vectorstores.chroma import Chroma
+
+
+sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
 
 
 def load_and_process_file(file_data, openai_api_key):
