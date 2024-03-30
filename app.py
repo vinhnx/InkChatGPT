@@ -8,12 +8,8 @@ from langchain_community.document_loaders import Docx2txtLoader, PyPDFLoader, Te
 from langchain_community.embeddings.openai import OpenAIEmbeddings
 from langchain_community.vectorstores.chroma import Chroma
 
-from apikey import llm_api_key
 
-key = llm_api_key
-
-
-def load_and_process_file(file_data):
+def load_and_process_file(file_data, openai_api_key):
     """
     Load and process the uploaded file.
     Returns a vector store containing the embedded chunks of the file.
@@ -43,13 +39,13 @@ def load_and_process_file(file_data):
     )
     chunks = text_splitter.split_documents(documents)
 
-    embeddings = OpenAIEmbeddings()
+    embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
     vector_store = Chroma.from_documents(chunks, embeddings)
 
     return vector_store
 
 
-def initialize_chat_model(vector_store):
+def initialize_chat_model(vector_store, openai_api_key):
     """
     Initialize the chat model with the given vector store.
     Returns a ConversationalRetrievalChain instance.
@@ -57,7 +53,7 @@ def initialize_chat_model(vector_store):
     llm = ChatOpenAI(
         model="gpt-3.5-turbo",
         temperature=0,
-        openai_api_key=key,
+        openai_api_key=openai_api_key,
     )
     retriever = vector_store.as_retriever()
     return ConversationalRetrievalChain.from_llm(llm, retriever)
@@ -69,7 +65,6 @@ def main():
     """
 
     st.set_page_config(page_title="InkChatGPT", page_icon="📚")
-
     st.title("📚 InkChatGPT")
     st.write("Upload a document and ask questions related to its content.")
 
@@ -77,22 +72,32 @@ def main():
         "Select a file", type=["pdf", "docx", "txt"], key="file_uploader"
     )
 
-    if uploaded_file:
+    openai_api_key = st.text_input(
+        "OpenAI API Key", type="password", disabled=not (uploaded_file)
+    )
+
+    if uploaded_file and openai_api_key.startswith("sk-"):
         add_file = st.button(
             "Process File",
             on_click=clear_history,
             key="process_button",
         )
 
-    if uploaded_file and add_file:
-        with st.spinner("💭 Thinking..."):
-            vector_store = load_and_process_file(uploaded_file)
-            if vector_store:
-                crc = initialize_chat_model(vector_store)
-                st.session_state.crc = crc
-                st.success("File processed successfully!")
+        if uploaded_file and add_file:
+            with st.spinner("💭 Thinking..."):
+                vector_store = load_and_process_file(
+                    uploaded_file,
+                    openai_api_key,
+                )
 
-    if "crc" in st.session_state:
+                if vector_store:
+                    crc = initialize_chat_model(
+                        vector_store,
+                        openai_api_key=openai_api_key,
+                    )
+                    st.session_state.crc = crc
+                    st.success("File processed successfully!")
+
         st.markdown("## Ask a Question")
         question = st.text_area(
             "Enter your question",

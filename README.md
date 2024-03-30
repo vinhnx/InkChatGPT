@@ -81,17 +81,7 @@ pip install -r requirements.txt
 4. **Configure the App**:
 
 -   Navigate to OpenAI Platform > API Keys to generate an API Key to run the model
--   Create a `.env` file locally, this file is hidden and will be automatically ignored by `.gitignore`
-
-```sh
-touch .env
-```
-
-Inside `.env` file, pass the API Key into `OPENAI_API_KEY` value
-
-```sh
-OPENAI_API_KEY={YOUR_API_KEY_HERE}
-```
+-   Copy the API KEY (start with sk-)
 
 5. **Run the Streamlit App**:
 
@@ -101,6 +91,7 @@ OPENAI_API_KEY={YOUR_API_KEY_HERE}
     streamlit run app.py
     ```
 -   This will start the Streamlit app and provide you with a local URL to access the app in your web browser.
+-   Pass your OpenAI API key into the `OpenAI API Key` field
 
 6. **Use the App**:
 
