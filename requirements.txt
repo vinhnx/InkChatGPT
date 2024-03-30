@@ -6,3 +6,5 @@ openai
 tiktoken
 pypdf
 python-dotenv
+docx2txt
+pysqlite3
