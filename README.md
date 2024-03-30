@@ -1,3 +1,7 @@
+<div align="center">
+  <img alt="app icon" height="196px" src="./assets/icon.jpg">
+</div>
+
 # InkChatGPT
 
 A Simple LLM app that demonstrates a Retrieval-Augmented Generation (RAG) model for question-answering using LangChain, ChromaDB, and OpenAI's language models.
@@ -6,12 +10,12 @@ The app allows users to upload documents (PDFs or text files), and then ask ques
 
 ---
 
-Running RAG to ask question about certain information inside the Document. 
+Running RAG to ask question about certain information inside the Document.
 
 > [!NOTE]  
 > For this demo, I use asked the model about the [How to Build Your Career in AI](https://info.deeplearning.ai/how-to-build-a-career-in-ai-book) PDF from Andrew Ng.
 
-![Demo Screenshot](./img/screenshot.jpg)
+![Demo Screenshot](./assets/screenshot.jpg)
 
 ---
 
