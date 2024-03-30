@@ -67,6 +67,7 @@ def main():
     """
     The main function that runs the Streamlit app.
     """
+
     st.set_page_config(page_title="InkChatGPT", page_icon="📚")
 
     st.title("📚 InkChatGPT")
