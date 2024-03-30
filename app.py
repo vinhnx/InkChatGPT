@@ -1,17 +1,14 @@
 import os
+
 import streamlit as st
+from langchain.chains import ConversationalRetrievalChain
+from langchain.chat_models import ChatOpenAI
+from langchain.document_loaders import Docx2txtLoader, PyPDFLoader, TextLoader
+from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.vectorstores.chroma import Chroma
 
 from apikey import llm_api_key
-from langchain.chat_models import ChatOpenAI
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.vectorstores.chroma import Chroma
-from langchain.chains import ConversationalRetrievalChain
-from langchain.document_loaders import (
-    PyPDFLoader,
-    Docx2txtLoader,
-    TextLoader,
-)
 
 key = llm_api_key
 
@@ -151,4 +148,5 @@ def clear_history():
 
 
 if __name__ == "__main__":
+    main()
     main()
