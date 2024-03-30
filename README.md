@@ -17,7 +17,7 @@ The app allows users to upload documents (PDFs or text files), and then ask ques
 -   **Retrieval-Augmented Generation (RAG)**: Utilizes a RAG model for context-aware question answering.
 -   **LangChain Integration**: Leverages LangChain for building the RAG model.
 -   **ChromaDB**: Efficient vector storage and retrieval using ChromaDB.
--   **OpenAI Language Models**: Powered by OpenAI's language models for answer generation.
+-   **OpenAI Language Models**: Use `gpt-3.5-turbo` embedding model for answer generation.
 -   **Streamlit UI**: Interactive and user-friendly web interface.
 
 ## Installation

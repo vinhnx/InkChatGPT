@@ -69,17 +69,19 @@ def main():
     """
     st.set_page_config(page_title="Chat with Document", page_icon="📚")
 
-    st.title("📚 Chat with Document")
+    st.title("📚 InkChatGPT")
     st.write("Upload a document and ask questions related to its content.")
 
     uploaded_file = st.file_uploader(
         "Upload a file", type=["pdf", "docx", "txt"], key="file_uploader"
     )
-    add_file = st.button(
-        "Process File",
-        on_click=clear_history,
-        key="process_button",
-    )
+
+    if uploaded_file:
+        add_file = st.button(
+            "Process File",
+            on_click=clear_history,
+            key="process_button",
+        )
 
     if uploaded_file and add_file:
         with st.spinner("Processing file..."):
@@ -90,7 +92,11 @@ def main():
                 st.success("File processed successfully!")
 
     st.markdown("## Ask a Question")
-    question = st.text_area("Enter your question", height=200, key="question_input")
+    question = st.text_area(
+        "Enter your question",
+        height=200,
+        key="question_input",
+    )
     submit_button = st.button("Submit", key="submit_button")
 
     if submit_button and "crc" in st.session_state:
