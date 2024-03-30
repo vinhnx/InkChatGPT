@@ -1,18 +1,33 @@
 import os
 
-__import__("pysqlite3")
-import sys
-
 import streamlit as st
+from langchain.callbacks.base import BaseCallbackHandler
 from langchain.chains import ConversationalRetrievalChain
+from langchain.schema import ChatMessage
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.chat_models import ChatOpenAI
 from langchain_community.document_loaders import Docx2txtLoader, PyPDFLoader, TextLoader
 from langchain_community.embeddings.openai import OpenAIEmbeddings
 from langchain_community.vectorstores.chroma import Chroma
+from langchain_openai import ChatOpenAI
 
 
-sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
+st.set_page_config(page_title="InkChatGPT", page_icon="📚")
+
+with st.sidebar:
+    openai_api_key = st.text_input("OpenAI API Key", type="password")
+
+    if not openai_api_key:
+        st.info("Please add your OpenAI API key to continue.")
+
+
+class StreamHandler(BaseCallbackHandler):
+    def __init__(self, container, initial_text=""):
+        self.container = container
+        self.text = initial_text
+
+    def on_llm_new_token(self, token: str, **kwargs) -> None:
+        self.text += token
+        self.container.markdown(self.text)
 
 
 def load_and_process_file(file_data, openai_api_key):
@@ -70,7 +85,6 @@ def main():
     The main function that runs the Streamlit app.
     """
 
-    st.set_page_config(page_title="InkChatGPT", page_icon="📚")
     st.title("📚 InkChatGPT")
     st.write("Upload a document and ask questions related to its content.")
 
@@ -78,48 +92,39 @@ def main():
         "Select a file", type=["pdf", "docx", "txt"], key="file_uploader"
     )
 
-    openai_api_key = st.text_input(
-        "OpenAI API Key", type="password", disabled=not (uploaded_file)
-    )
-
     if uploaded_file and openai_api_key.startswith("sk-"):
-        add_file = st.button(
-            "Process File",
-            on_click=clear_history,
-            key="process_button",
-        )
+        with st.spinner("💭 Thinking..."):
+            vector_store = load_and_process_file(
+                uploaded_file,
+                openai_api_key,
+            )
 
-        if uploaded_file and add_file:
-            with st.spinner("💭 Thinking..."):
-                vector_store = load_and_process_file(
-                    uploaded_file,
-                    openai_api_key,
+            if vector_store:
+                crc = initialize_chat_model(
+                    vector_store,
+                    openai_api_key=openai_api_key,
                 )
+                st.session_state.crc = crc
+                st.success("File processed successfully!")
 
-                if vector_store:
-                    crc = initialize_chat_model(
-                        vector_store,
-                        openai_api_key=openai_api_key,
-                    )
-                    st.session_state.crc = crc
-                    st.success("File processed successfully!")
+    if "crc" in st.session_state:
+        st.session_state["messages"] = [
+            ChatMessage(role="assistant", content="How can I help you?")
+        ]
 
-        st.markdown("## Ask a Question")
-        question = st.text_area(
-            "Enter your question",
-            height=93,
-            key="question_input",
-        )
+        if prompt := st.chat_input():
+            st.session_state.messages.append(
+                ChatMessage(
+                    role="user",
+                    content=prompt,
+                )
+            )
+            st.chat_message("user").write(prompt)
 
-        submit_button = st.button("Submit", key="submit_button")
-
-        if submit_button and "crc" in st.session_state:
-            handle_question(question)
-
-        display_chat_history()
+            handle_question(prompt, openai_api_key=openai_api_key)
 
 
-def handle_question(question):
+def handle_question(question, openai_api_key):
     """
     Handles the user's question by generating a response and updating the chat history.
     """
@@ -136,13 +141,28 @@ def handle_question(question):
         )
 
     st.session_state["history"].append((question, response))
-    st.write(response)
+
+    for msg in st.session_state.messages:
+        st.chat_message(msg.role).write(msg.content)
+
+    with st.chat_message("assistant"):
+        stream_handler = StreamHandler(st.empty())
+        llm = ChatOpenAI(
+            openai_api_key=openai_api_key,
+            streaming=True,
+            callbacks=[stream_handler],
+        )
+        response = llm.invoke(st.session_state.messages)
+        st.session_state.messages.append(
+            ChatMessage(role="assistant", content=response.content)
+        )
 
 
 def display_chat_history():
     """
     Displays the chat history in the Streamlit app.
     """
+
     if "history" in st.session_state:
         st.markdown("## Chat History")
         for q, a in st.session_state["history"]:
