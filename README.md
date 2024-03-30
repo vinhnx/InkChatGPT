@@ -6,6 +6,7 @@ The app allows users to upload documents (PDFs or text files), and then ask ques
 
 ---
 
+Running RAG to ask question about certain information inside the Document. For this demo, I use asked the model about the [How to Build Your Career in AI](https://info.deeplearning.ai/how-to-build-a-career-in-ai-book) PDF from Andrew Ng.
 ![Demo Screenshot](./img/screenshot.jpg)
 
 ---

@@ -26,7 +26,7 @@ def load_and_process_file(file_data):
     with open(file_name, "wb") as f:
         f.write(file_data.getvalue())
 
-    name, extension = os.path.splitext(file_name)
+    _, extension = os.path.splitext(file_name)
 
     # Load the file using the appropriate loader
     if extension == ".pdf":
@@ -67,13 +67,13 @@ def main():
     """
     The main function that runs the Streamlit app.
     """
-    st.set_page_config(page_title="Chat with Document", page_icon="📚")
+    st.set_page_config(page_title="InkChatGPT", page_icon="📚")
 
     st.title("📚 InkChatGPT")
     st.write("Upload a document and ask questions related to its content.")
 
     uploaded_file = st.file_uploader(
-        "Upload a file", type=["pdf", "docx", "txt"], key="file_uploader"
+        "Select a file", type=["pdf", "docx", "txt"], key="file_uploader"
     )
 
     if uploaded_file:
@@ -84,7 +84,7 @@ def main():
         )
 
     if uploaded_file and add_file:
-        with st.spinner("Processing file..."):
+        with st.spinner("💭 Thinking..."):
             vector_store = load_and_process_file(uploaded_file)
             if vector_store:
                 crc = initialize_chat_model(vector_store)
@@ -94,7 +94,7 @@ def main():
     st.markdown("## Ask a Question")
     question = st.text_area(
         "Enter your question",
-        height=200,
+        height=93,
         key="question_input",
     )
     submit_button = st.button("Submit", key="submit_button")
