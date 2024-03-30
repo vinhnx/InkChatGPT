@@ -8,3 +8,4 @@ tiktoken
 pypdf
 docx2txt
 watchdog
+pysqlite3-binary

@@ -10,6 +10,11 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 st.set_page_config(page_title="InkChatGPT", page_icon="📚")
 
+__import__("pysqlite3")
+import sys
+
+sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
+
 
 class StreamHandler(BaseCallbackHandler):
     def __init__(self, container, initial_text=""):
