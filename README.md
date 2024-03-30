@@ -2,13 +2,13 @@
   <img alt="app icon" height="196px" src="./assets/icon.jpg">
 </div>
 
-# [InkChatGPT](https://inkchatgpt.streamlit.app)
+# 📚 [InkChatGPT](https://inkchatgpt.streamlit.app) [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://inkchatgpt.streamlit.app)
 
 InkChatGPT is a Simple LLM app that demonstrates a Retrieval-Augmented Generation (RAG) model for question-answering using LangChain, ChromaDB, and OpenAI's language models.
 
 The app allows users to upload documents (PDFs or text files), and then ask questions related to the content of those documents. The RAG model retrieves relevant passages from the documents and generates an answer based on the retrieved context.
 
-👉 Run the app, online: [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://inkchatgpt.streamlit.app)
+👉 Try it here: [InkChatGPT](https://inkchatgpt.streamlit.app/)
 
 ---
 
