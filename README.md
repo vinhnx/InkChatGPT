@@ -15,7 +15,7 @@ Running RAG to ask question about certain information inside the Document.
 > [!NOTE]  
 > For this demo, I use asked the model about the [How to Build Your Career in AI](https://info.deeplearning.ai/how-to-build-a-career-in-ai-book) PDF from Andrew Ng.
 
-![Demo Screenshot](./assets/screenshot.jpg)
+![Demo Screenshot](./assets/demo.jpg)
 
 ---
 
