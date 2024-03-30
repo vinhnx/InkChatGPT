@@ -1,6 +1,8 @@
-streamlit
 langchain
+streamlit
+streamlit_chat
 chromadb
 openai
 tiktoken
 pypdf
+python-dotenv

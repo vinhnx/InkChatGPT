@@ -1,6 +1,7 @@
 import os
 import streamlit as st
 
+from apikey import llm_api_key
 from langchain.chat_models import ChatOpenAI
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings.openai import OpenAIEmbeddings
@@ -11,6 +12,8 @@ from langchain.document_loaders import (
     Docx2txtLoader,
     TextLoader,
 )
+
+key = llm_api_key
 
 
 def load_and_process_file(file_data):
@@ -54,7 +57,11 @@ def initialize_chat_model(vector_store):
     Initialize the chat model with the given vector store.
     Returns a ConversationalRetrievalChain instance.
     """
-    llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
+    llm = ChatOpenAI(
+        model="gpt-3.5-turbo",
+        temperature=0,
+        openai_api_key=key,
+    )
     retriever = vector_store.as_retriever()
     return ConversationalRetrievalChain.from_llm(llm, retriever)
 

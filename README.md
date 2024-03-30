@@ -83,7 +83,7 @@ touch .env
 Inside `.env` file, pass the API Key into `OPENAI_API_KEY` value
 
 ```sh
-OPENAI_API_KEY = "sk-..."
+OPENAI_API_KEY={YOUR_API_KEY_HERE}
 ```
 
 5. **Run the Streamlit App**:
