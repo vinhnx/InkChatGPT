@@ -94,18 +94,20 @@ def main():
                 st.session_state.crc = crc
                 st.success("File processed successfully!")
 
-    st.markdown("## Ask a Question")
-    question = st.text_area(
-        "Enter your question",
-        height=93,
-        key="question_input",
-    )
-    submit_button = st.button("Submit", key="submit_button")
+    if "crc" in st.session_state:
+        st.markdown("## Ask a Question")
+        question = st.text_area(
+            "Enter your question",
+            height=93,
+            key="question_input",
+        )
 
-    if submit_button and "crc" in st.session_state:
-        handle_question(question)
+        submit_button = st.button("Submit", key="submit_button")
 
-    display_chat_history()
+        if submit_button and "crc" in st.session_state:
+            handle_question(question)
+
+        display_chat_history()
 
 
 def handle_question(question):
