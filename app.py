@@ -2,11 +2,11 @@ import os
 
 import streamlit as st
 from langchain.chains import ConversationalRetrievalChain
-from langchain.chat_models import ChatOpenAI
-from langchain.document_loaders import Docx2txtLoader, PyPDFLoader, TextLoader
-from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.vectorstores.chroma import Chroma
+from langchain_community.chat_models import ChatOpenAI
+from langchain_community.document_loaders import Docx2txtLoader, PyPDFLoader, TextLoader
+from langchain_community.embeddings.openai import OpenAIEmbeddings
+from langchain_community.vectorstores.chroma import Chroma
 
 from apikey import llm_api_key
 
