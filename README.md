@@ -73,9 +73,18 @@ pip install -r requirements.txt
 
 4. **Configure the App**:
 
--   Open the `app.py` file in the VSCode editor.
--   Set your OpenAI API key by modifying the `OPENAI_API_KEY` variable.
--   Optionally, you can change the `CHROMA_PERSIST_DIRECTORY` and `OPENAI_MODEL` variables according to your preferences.
+-   Navigate to OpenAI Platform > API Keys to generate an API Key to run the model
+-   Create a `.env` file locally, this file is hidden and will be automatically ignored by `.gitignore`
+
+```sh
+touch .env
+```
+
+Inside `.env` file, pass the API Key into `OPENAI_API_KEY` value
+
+```sh
+OPENAI_API_KEY = "sk-..."
+```
 
 5. **Run the Streamlit App**:
 

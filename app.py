@@ -12,10 +12,6 @@ from langchain.document_loaders import (
     TextLoader,
 )
 
-from apikey import openai_api_key
-
-os.environ["OPENAI_API_KEY"] = openai_api_key
-
 
 def load_and_process_file(file_data):
     """
