@@ -1,23 +1,14 @@
 import os
-
 import streamlit as st
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.chains import ConversationalRetrievalChain
 from langchain.schema import ChatMessage
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import Docx2txtLoader, PyPDFLoader, TextLoader
-from langchain_community.embeddings.openai import OpenAIEmbeddings
 from langchain_community.vectorstores.chroma import Chroma
-from langchain_openai import ChatOpenAI
-
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 st.set_page_config(page_title="InkChatGPT", page_icon="📚")
-
-with st.sidebar:
-    openai_api_key = st.text_input("OpenAI API Key", type="password")
-
-    if not openai_api_key:
-        st.info("Please add your OpenAI API key to continue.")
 
 
 class StreamHandler(BaseCallbackHandler):
@@ -30,7 +21,7 @@ class StreamHandler(BaseCallbackHandler):
         self.container.markdown(self.text)
 
 
-def load_and_process_file(file_data, openai_api_key):
+def load_and_process_file(file_data):
     """
     Load and process the uploaded file.
     Returns a vector store containing the embedded chunks of the file.
@@ -49,7 +40,7 @@ def load_and_process_file(file_data, openai_api_key):
     elif extension == ".txt":
         loader = TextLoader(file_name)
     else:
-        st.write("This document format is not supported!")
+        st.error("This document format is not supported!")
         return None
 
     documents = loader.load()
@@ -59,14 +50,12 @@ def load_and_process_file(file_data, openai_api_key):
         chunk_overlap=200,
     )
     chunks = text_splitter.split_documents(documents)
-
-    embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
+    embeddings = OpenAIEmbeddings(openai_api_key=st.session_state.api_key)
     vector_store = Chroma.from_documents(chunks, embeddings)
-
     return vector_store
 
 
-def initialize_chat_model(vector_store, openai_api_key):
+def initialize_chat_model(vector_store):
     """
     Initialize the chat model with the given vector store.
     Returns a ConversationalRetrievalChain instance.
@@ -74,7 +63,7 @@ def initialize_chat_model(vector_store, openai_api_key):
     llm = ChatOpenAI(
         model="gpt-3.5-turbo",
         temperature=0,
-        openai_api_key=openai_api_key,
+        openai_api_key=st.session_state.api_key,
     )
     retriever = vector_store.as_retriever()
     return ConversationalRetrievalChain.from_llm(llm, retriever)
@@ -85,60 +74,41 @@ def main():
     The main function that runs the Streamlit app.
     """
 
-    st.title("📚 InkChatGPT")
-    st.write("Upload a document and ask questions related to its content.")
+    # if "messages" not in st.session_state:
+    st.session_state["messages"] = [
+        ChatMessage(role="assistant", content="How can I help you?")
+    ]
 
-    uploaded_file = st.file_uploader(
-        "Select a file", type=["pdf", "docx", "txt"], key="file_uploader"
-    )
-
-    if uploaded_file and openai_api_key.startswith("sk-"):
-        with st.spinner("💭 Thinking..."):
-            vector_store = load_and_process_file(
-                uploaded_file,
-                openai_api_key,
+    if prompt := st.chat_input(
+        placeholder="Chat with your document",
+        disabled=(not st.session_state.api_key),
+    ):
+        st.session_state.messages.append(
+            ChatMessage(
+                role="user",
+                content=prompt,
             )
+        )
+        st.chat_message("user").write(prompt)
 
-            if vector_store:
-                crc = initialize_chat_model(
-                    vector_store,
-                    openai_api_key=openai_api_key,
-                )
-                st.session_state.crc = crc
-                st.success("File processed successfully!")
-
-    if "crc" in st.session_state:
-        st.session_state["messages"] = [
-            ChatMessage(role="assistant", content="How can I help you?")
-        ]
-
-        if prompt := st.chat_input():
-            st.session_state.messages.append(
-                ChatMessage(
-                    role="user",
-                    content=prompt,
-                )
-            )
-            st.chat_message("user").write(prompt)
-
-            handle_question(prompt, openai_api_key=openai_api_key)
+        handle_question(prompt)
 
 
-def handle_question(question, openai_api_key):
+def handle_question(question):
     """
     Handles the user's question by generating a response and updating the chat history.
     """
     crc = st.session_state.crc
+
     if "history" not in st.session_state:
         st.session_state["history"] = []
 
-    with st.spinner("Generating response..."):
-        response = crc.run(
-            {
-                "question": question,
-                "chat_history": st.session_state["history"],
-            }
-        )
+    response = crc.run(
+        {
+            "question": question,
+            "chat_history": st.session_state["history"],
+        }
+    )
 
     st.session_state["history"].append((question, response))
 
@@ -148,7 +118,7 @@ def handle_question(question, openai_api_key):
     with st.chat_message("assistant"):
         stream_handler = StreamHandler(st.empty())
         llm = ChatOpenAI(
-            openai_api_key=openai_api_key,
+            openai_api_key=st.session_state.api_key,
             streaming=True,
             callbacks=[stream_handler],
         )
@@ -179,5 +149,40 @@ def clear_history():
         del st.session_state["history"]
 
 
+def build_sidebar():
+    with st.sidebar:
+        st.title("📚 InkChatGPT")
+        st.write("Upload a document and ask questions related to its content.")
+
+        openai_api_key = st.text_input(
+            "OpenAI API Key", type="password", placeholder="Enter your OpenAI API key"
+        )
+        st.session_state.api_key = openai_api_key
+
+        if not openai_api_key:
+            st.info("Please add your OpenAI API key to continue.")
+
+        uploaded_file = st.file_uploader(
+            "Select a file", type=["pdf", "docx", "txt"], key="file_uploader"
+        )
+
+        if uploaded_file and openai_api_key.startswith("sk-"):
+            add_file = st.button(
+                "Process File",
+                on_click=clear_history,
+                key="process_button",
+            )
+
+            if uploaded_file and add_file:
+                with st.spinner("💭 Thinking..."):
+                    vector_store = load_and_process_file(uploaded_file)
+
+                    if vector_store:
+                        crc = initialize_chat_model(vector_store)
+                        st.session_state.crc = crc
+                        st.success("File processed successfully!")
+
+
 if __name__ == "__main__":
+    build_sidebar()
     main()
