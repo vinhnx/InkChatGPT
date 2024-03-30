@@ -8,11 +8,6 @@ from langchain_community.document_loaders import Docx2txtLoader, PyPDFLoader, Te
 from langchain_community.vectorstores.chroma import Chroma
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
-__import__("pysqlite3")
-import sys
-
-sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
-
 st.set_page_config(page_title="InkChatGPT", page_icon="📚")
 
 
@@ -79,10 +74,12 @@ def main():
     The main function that runs the Streamlit app.
     """
 
-    # if "messages" not in st.session_state:
+    assistant_message = "Hello, you can upload a document and chat with me to ask questions related to its content."
     st.session_state["messages"] = [
-        ChatMessage(role="assistant", content="How can I help you?")
+        ChatMessage(role="assistant", content=assistant_message)
     ]
+
+    st.chat_message("assistant").write(assistant_message)
 
     if prompt := st.chat_input(
         placeholder="Chat with your document",
@@ -157,7 +154,6 @@ def clear_history():
 def build_sidebar():
     with st.sidebar:
         st.title("📚 InkChatGPT")
-        st.write("Upload a document and ask questions related to its content.")
 
         openai_api_key = st.text_input(
             "OpenAI API Key", type="password", placeholder="Enter your OpenAI API key"
