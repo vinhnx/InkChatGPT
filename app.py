@@ -71,7 +71,7 @@ def main():
     The main function that runs the Streamlit app.
     """
 
-    if "openai_api_key" in st.secrets:
+    if "OPENAI_API_KEY" in st.secrets:
         openai_api_key = st.secrets.OPENAI_API_KEY
     else:
         openai_api_key = st.sidebar.text_input("OpenAI API Key", type="password")
