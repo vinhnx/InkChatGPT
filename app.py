@@ -51,7 +51,7 @@ def load_and_process_file(file_data):
         chunk_overlap=200,
     )
     chunks = text_splitter.split_documents(documents)
-    embeddings = OpenAIEmbeddings(openai_api_key=st.session_state.api_key)
+    embeddings = OpenAIEmbeddings(api_key=st.session_state.api_key)
     vector_store = Chroma.from_documents(chunks, embeddings)
     return vector_store
 
@@ -92,7 +92,7 @@ def main():
         )
 
         llm = ChatOpenAI(
-            openai_api_key=st.session_state.api_key,
+            api_key=st.session_state.api_key,
             temperature=0.0,
             model_name="gpt-3.5-turbo",
         )
