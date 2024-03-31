@@ -113,7 +113,7 @@ def main():
 
 def build_sidebar():
     with st.sidebar:
-        st.title("📚 InkChatGPT")
+        st.subheader("📚 InkChatGPT")
 
         openai_api_key = st.text_input(
             "OpenAI API Key",
@@ -122,26 +122,32 @@ def build_sidebar():
         )
         st.session_state.api_key = openai_api_key
 
-        uploaded_file = st.file_uploader(
-            "Select a file", type=["pdf", "docx", "txt"], key="file_uploader"
-        )
+        with st.form("my_form"):
 
-        add_file = st.button(
-            "Process File",
-            disabled=(not uploaded_file and not st.session_state.api_key),
-        )
-        if add_file and uploaded_file and st.session_state.api_key.startswith("sk-"):
-            with st.spinner("💭 Thinking..."):
-                vector_store = load_and_process_file(uploaded_file)
+            uploaded_file = st.file_uploader(
+                "Select a file", type=["pdf", "docx", "txt"], key="file_uploader"
+            )
 
-                if vector_store:
-                    msgs.add_ai_message(
-                        f"""
-                        File: `{uploaded_file.name}`, processed successfully!
+            add_file = st.form_submit_button(
+                "Process File",
+                disabled=(not uploaded_file and not openai_api_key),
+            )
+            if (
+                add_file
+                and uploaded_file
+                and st.session_state.api_key.startswith("sk-")
+            ):
+                with st.spinner("💭 Thinking..."):
+                    vector_store = load_and_process_file(uploaded_file)
 
-                        Feel free to ask me any question.
-                        """
-                    )
+                    if vector_store:
+                        msgs.add_ai_message(
+                            f"""
+                                    File: `{uploaded_file.name}`, processed successfully!
+
+                                    Feel free to ask me any question.
+                                    """
+                        )
 
 
 if __name__ == "__main__":
