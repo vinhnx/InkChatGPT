@@ -51,7 +51,7 @@ def load_and_process_file(file_data):
         chunk_overlap=200,
     )
     chunks = text_splitter.split_documents(documents)
-    embeddings = OpenAIEmbeddings(openai_api_key=st.secrets.OPENAI_API_KEY)
+    embeddings = OpenAIEmbeddings(openai_api_key=st.session_state.api_key)
     vector_store = Chroma.from_documents(chunks, embeddings)
     return vector_store
 
@@ -61,14 +61,8 @@ def main():
     The main function that runs the Streamlit app.
     """
 
-    if st.secrets.OPENAI_API_KEY:
-        openai_api_key = st.secrets.OPENAI_API_KEY
-    else:
-        openai_api_key = st.sidebar.text_input("OpenAI API Key", type="password")
-        st.secrets.OPENAI_API_KEY = openai_api_key
-
-        if not st.secrets.OPENAI_API_KEY:
-            st.info("Please add your OpenAI API key to continue.")
+    if not st.session_state.api_key:
+        st.info("Please add your OpenAI API key to continue.")
 
     if len(msgs.messages) == 0:
         msgs.add_ai_message(
@@ -86,7 +80,7 @@ def main():
     # If user inputs a new prompt, generate and draw a new response
     if question := st.chat_input(
         placeholder="Chat with your document",
-        disabled=(not openai_api_key),
+        disabled=(not st.session_state.api_key),
     ):
         st.chat_message(ChatProfileRoleEnum.Human).write(question)
         prompt = ChatPromptTemplate.from_messages(
@@ -98,7 +92,7 @@ def main():
         )
 
         llm = ChatOpenAI(
-            openai_api_key=st.secrets.OPENAI_API_KEY,
+            openai_api_key=st.session_state.api_key,
             temperature=0.0,
             model_name="gpt-3.5-turbo",
         )
@@ -120,15 +114,23 @@ def main():
 def build_sidebar():
     with st.sidebar:
         st.title("📚 InkChatGPT")
+
+        openai_api_key = st.text_input(
+            "OpenAI API Key",
+            type="password",
+            placeholder="Enter your OpenAI API key",
+        )
+        st.session_state.api_key = openai_api_key
+
         uploaded_file = st.file_uploader(
             "Select a file", type=["pdf", "docx", "txt"], key="file_uploader"
         )
 
         add_file = st.button(
             "Process File",
-            disabled=(not uploaded_file and not st.secrets.OPENAI_API_KEY),
+            disabled=(not uploaded_file and not st.session_state.api_key),
         )
-        if add_file and uploaded_file and st.secrets.OPENAI_API_KEY.startswith("sk-"):
+        if add_file and uploaded_file and st.session_state.api_key.startswith("sk-"):
             with st.spinner("💭 Thinking..."):
                 vector_store = load_and_process_file(uploaded_file)
 
