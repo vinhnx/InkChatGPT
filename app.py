@@ -1,155 +1,130 @@
 import os
+import tempfile
+
 import streamlit as st
-
-from chat_profile import ChatProfileRoleEnum
+from langchain.callbacks.base import BaseCallbackHandler
+from langchain.chains import ConversationalRetrievalChain
+from langchain.chat_models import ChatOpenAI
+from langchain.document_loaders import PyPDFLoader
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.memory import ConversationBufferMemory
+from langchain.memory.chat_message_histories import StreamlitChatMessageHistory
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import Docx2txtLoader, PyPDFLoader, TextLoader
-from langchain_community.vectorstores.chroma import Chroma
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_community.chat_message_histories import StreamlitChatMessageHistory
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_community.vectorstores import DocArrayInMemorySearch
 
-__import__("pysqlite3")
-import sys
+st.set_page_config(page_title="📚 InkChatGPT: Chat with Documents", page_icon="📚")
+st.subheader("📚 InkChatGPT")
+st.write("Chat with Documents")
 
-sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
+@st.cache_resource(ttl="1h")
+def configure_retriever(uploaded_files):
+    # Read documents
+    docs = []
+    temp_dir = tempfile.TemporaryDirectory()
+    for file in uploaded_files:
+        temp_filepath = os.path.join(temp_dir.name, file.name)
+        with open(temp_filepath, "wb") as f:
+            f.write(file.getvalue())
+        loader = PyPDFLoader(temp_filepath)
+        docs.extend(loader.load())
 
-# config page
-st.set_page_config(page_title="InkChatGPT", page_icon="📚")
+    # Split documents
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
+    splits = text_splitter.split_documents(docs)
 
-# Set up memory
-msgs = StreamlitChatMessageHistory(key="langchain_messages")
+    # Create embeddings and store in vectordb
+    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    vectordb = DocArrayInMemorySearch.from_documents(splits, embeddings)
 
-
-def load_and_process_file(file_data):
-    """
-    Load and process the uploaded file.
-    Returns a vector store containing the embedded chunks of the file.
-    """
-    file_name = os.path.join("./", file_data.name)
-    with open(file_name, "wb") as f:
-        f.write(file_data.getvalue())
-
-    _, extension = os.path.splitext(file_name)
-
-    # Load the file using the appropriate loader
-    if extension == ".pdf":
-        loader = PyPDFLoader(file_name)
-    elif extension == ".docx":
-        loader = Docx2txtLoader(file_name)
-    elif extension == ".txt":
-        loader = TextLoader(file_name)
-    else:
-        st.error("This document format is not supported!")
-        return None
-
-    documents = loader.load()
-
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200,
+    # Define retriever
+    retriever = vectordb.as_retriever(
+        search_type="mmr", search_kwargs={"k": 2, "fetch_k": 4}
     )
-    chunks = text_splitter.split_documents(documents)
-    embeddings = OpenAIEmbeddings(api_key=st.session_state.api_key)
-    vector_store = Chroma.from_documents(chunks, embeddings)
-    return vector_store
+
+    return retriever
 
 
-def main():
-    """
-    The main function that runs the Streamlit app.
-    """
-
-    if not st.session_state.api_key:
-        st.info("Please add your OpenAI API key to continue.")
-
-    if len(msgs.messages) == 0:
-        msgs.add_ai_message(
-            """
-            Hello, how can I help you?
-
-            You can upload a document and chat with me to ask questions related to its content.
-        """
-        )
-
-    # Render current messages from StreamlitChatMessageHistory
-    for msg in msgs.messages:
-        st.chat_message(msg.type).write(msg.content)
-
-    # If user inputs a new prompt, generate and draw a new response
-    if question := st.chat_input(
-        placeholder="Chat with your document",
-        disabled=(not st.session_state.api_key),
+class StreamHandler(BaseCallbackHandler):
+    def __init__(
+        self, container: st.delta_generator.DeltaGenerator, initial_text: str = ""
     ):
-        st.chat_message(ChatProfileRoleEnum.Human).write(question)
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", "You are an AI chatbot having a conversation with a human."),
-                MessagesPlaceholder(variable_name="history"),
-                (ChatProfileRoleEnum.Human, f"{question}"),
-            ]
+        self.container = container
+        self.text = initial_text
+        self.run_id_ignore_token = None
+
+    def on_llm_start(self, serialized: dict, prompts: list, **kwargs):
+        # Workaround to prevent showing the rephrased question as output
+        if prompts[0].startswith("Human"):
+            self.run_id_ignore_token = kwargs.get("run_id")
+
+    def on_llm_new_token(self, token: str, **kwargs) -> None:
+        if self.run_id_ignore_token == kwargs.get("run_id", False):
+            return
+        self.text += token
+        self.container.markdown(self.text)
+
+
+class PrintRetrievalHandler(BaseCallbackHandler):
+    def __init__(self, container):
+        self.status = container.status("**Context Retrieval**")
+
+    def on_retriever_start(self, serialized: dict, query: str, **kwargs):
+        self.status.write(f"**Question:** {query}")
+        self.status.update(label=f"**Context Retrieval:** {query}")
+
+    def on_retriever_end(self, documents, **kwargs):
+        for idx, doc in enumerate(documents):
+            source = os.path.basename(doc.metadata["source"])
+            self.status.write(f"**Document {idx} from {source}**")
+            self.status.markdown(doc.page_content)
+        self.status.update(state="complete")
+
+
+openai_api_key = st.sidebar.text_input("OpenAI API Key", type="password")
+if not openai_api_key:
+    st.info("Please add your OpenAI API key to continue.")
+    st.stop()
+
+uploaded_files = st.sidebar.file_uploader(
+    label="Upload PDF files", type=["pdf"], accept_multiple_files=True
+)
+if not uploaded_files:
+    st.info("Please upload PDF documents to continue.")
+    st.stop()
+
+retriever = configure_retriever(uploaded_files)
+
+# Setup memory for contextual conversation
+msgs = StreamlitChatMessageHistory()
+memory = ConversationBufferMemory(
+    memory_key="chat_history", chat_memory=msgs, return_messages=True
+)
+
+# Setup LLM and QA chain
+llm = ChatOpenAI(
+    model_name="gpt-3.5-turbo",
+    openai_api_key=openai_api_key,
+    temperature=0,
+    streaming=True,
+)
+qa_chain = ConversationalRetrievalChain.from_llm(
+    llm, retriever=retriever, memory=memory, verbose=True
+)
+
+if len(msgs.messages) == 0 or st.sidebar.button("Clear message history"):
+    msgs.clear()
+    msgs.add_ai_message("How can I help you?")
+
+avatars = {"human": "user", "ai": "assistant"}
+for msg in msgs.messages:
+    st.chat_message(avatars[msg.type]).write(msg.content)
+
+if user_query := st.chat_input(placeholder="Ask me anything!"):
+    st.chat_message("user").write(user_query)
+
+    with st.chat_message("assistant"):
+        retrieval_handler = PrintRetrievalHandler(st.container())
+        stream_handler = StreamHandler(st.empty())
+        response = qa_chain.run(
+            user_query, callbacks=[retrieval_handler, stream_handler]
         )
-
-        llm = ChatOpenAI(
-            api_key=st.session_state.api_key,
-            temperature=0.0,
-            model_name="gpt-3.5-turbo",
-        )
-
-        chain = prompt | llm
-        chain_with_history = RunnableWithMessageHistory(
-            chain,
-            lambda session_id: msgs,
-            input_messages_key="question",
-            history_messages_key="history",
-        )
-
-        # Note: new messages are saved to history automatically by Langchain during run
-        config = {"configurable": {"session_id": "any"}}
-        response = chain_with_history.invoke({"question": question}, config)
-        st.chat_message(ChatProfileRoleEnum.AI).write(response.content)
-
-
-def build_sidebar():
-    with st.sidebar:
-        st.subheader("📚 InkChatGPT")
-
-        openai_api_key = st.text_input(
-            "OpenAI API Key",
-            type="password",
-            placeholder="Enter your OpenAI API key",
-        )
-        st.session_state.api_key = openai_api_key
-
-        with st.form("my_form"):
-
-            uploaded_file = st.file_uploader(
-                "Select a file", type=["pdf", "docx", "txt"], key="file_uploader"
-            )
-
-            add_file = st.form_submit_button(
-                "Process File",
-                disabled=(not uploaded_file and not openai_api_key),
-            )
-            if (
-                add_file
-                and uploaded_file
-                and st.session_state.api_key.startswith("sk-")
-            ):
-                with st.spinner("💭 Thinking..."):
-                    vector_store = load_and_process_file(uploaded_file)
-
-                    if vector_store:
-                        msgs.add_ai_message(
-                            f"""
-                                    File: `{uploaded_file.name}`, processed successfully!
-
-                                    Feel free to ask me any question.
-                                    """
-                        )
-
-
-if __name__ == "__main__":
-    build_sidebar()
-    main()

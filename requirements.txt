@@ -1,11 +1,7 @@
+openai
+sentence-transformers
+docarray
 langchain
-langchain_openai
 streamlit
 streamlit_chat
-chromadb
-openai
-tiktoken
 pypdf
-docx2txt
-watchdog
-pysqlite3-binary
