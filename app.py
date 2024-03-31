@@ -80,12 +80,14 @@ def main():
         if not st.secrets.OPENAI_API_KEY:
             st.info("Please add your OpenAI API key to continue.")
 
-    assistant_message = "Hello, you can upload a document and chat with me to ask questions related to its content. Start by adding OpenAI API Key in the sidebar."
+    assistant_message = """
+    Hello, you can upload a document and chat with me to ask questions related to its content.
+
+    Start by adding OpenAI API Key in the sidebar.
+    """
     st.session_state["messages"] = [
         Assistant(message=assistant_message).build_message()
     ]
-
-    st.chat_message(ChatProfileRoleEnum.Assistant).write(assistant_message)
 
     if prompt := st.chat_input(
         placeholder="Chat with your document",
