@@ -24,7 +24,7 @@
 1. Clone the repository:
 
 ```sh
-git clone https://github.com/your-username/InkChatGPT.git
+git clone https://github.com/vinhnx/InkChatGPT.git
 cd InkChatGPT
 ```
 
@@ -32,7 +32,7 @@ cd InkChatGPT
 
 ```sh
 python -m venv env
-source env/bin/activate # On Windows, use env\Scripts\activate
+source env/bin/activate
 ```
 
 3. Install the required dependencies:
