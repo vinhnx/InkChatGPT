@@ -66,7 +66,7 @@ def main():
     The main function that runs the Streamlit app.
     """
 
-    assistant_message = "Hello, you can upload a document and chat with me to ask questions related to its content."
+    assistant_message = "Hello, you can upload a document and chat with me to ask questions related to its content. Start by adding OpenAI API Key in the sidebar."
     st.session_state["messages"] = [
         Assistant(message=assistant_message).build_message()
     ]
@@ -142,22 +142,25 @@ def build_sidebar():
     with st.sidebar:
         st.title("📚 InkChatGPT")
 
-        with st.form(key="input_form"):
-            openai_api_key = st.text_input(
-                "OpenAI API Key",
-                type="password",
-                placeholder="Enter your OpenAI API key",
-            )
+        openai_api_key = st.text_input(
+            "OpenAI API Key",
+            type="password",
+            placeholder="Enter your OpenAI API key",
+        )
 
-            st.session_state.api_key = openai_api_key
-            if not openai_api_key:
-                st.info("Please add your OpenAI API key to continue.")
+        st.session_state.api_key = openai_api_key
 
+        if not openai_api_key:
+            st.info("Please add your OpenAI API key to continue.")
+        else:
             uploaded_file = st.file_uploader(
                 "Select a file", type=["pdf", "docx", "txt"], key="file_uploader"
             )
 
-            add_file = st.form_submit_button("Process File")
+            add_file = st.button(
+                "Process File",
+                disabled=(not uploaded_file and not openai_api_key),
+            )
             if add_file and uploaded_file and openai_api_key.startswith("sk-"):
                 with st.spinner("💭 Thinking..."):
                     vector_store = load_and_process_file(uploaded_file)
@@ -165,7 +168,7 @@ def build_sidebar():
                     if vector_store:
                         crc = initialize_chat_model(vector_store)
                         st.session_state.crc = crc
-                        st.success(
+                        st.chat_message(ChatProfileRoleEnum.Assistant).write(
                             f"File: `{uploaded_file.name}`, processed successfully!"
                         )
 
