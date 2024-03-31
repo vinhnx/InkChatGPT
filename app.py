@@ -138,17 +138,6 @@ def clear_history():
         del st.session_state["history"]
 
 
-def process_data(uploaded_file, openai_api_key):
-    if uploaded_file and openai_api_key.startswith("sk-"):
-        with st.spinner("💭 Thinking..."):
-            vector_store = load_and_process_file(uploaded_file)
-
-            if vector_store:
-                crc = initialize_chat_model(vector_store)
-                st.session_state.crc = crc
-                st.success(f"File: `{uploaded_file.name}`, processed successfully!")
-
-
 def build_sidebar():
     with st.sidebar:
         st.title("📚 InkChatGPT")
@@ -168,12 +157,17 @@ def build_sidebar():
                 "Select a file", type=["pdf", "docx", "txt"], key="file_uploader"
             )
 
-            st.form_submit_button(
-                "Process File",
-                on_click=process_data(
-                    uploaded_file=uploaded_file, openai_api_key=openai_api_key
-                ),
-            )
+            add_file = st.form_submit_button("Process File")
+            if add_file and uploaded_file and openai_api_key.startswith("sk-"):
+                with st.spinner("💭 Thinking..."):
+                    vector_store = load_and_process_file(uploaded_file)
+
+                    if vector_store:
+                        crc = initialize_chat_model(vector_store)
+                        st.session_state.crc = crc
+                        st.success(
+                            f"File: `{uploaded_file.name}`, processed successfully!"
+                        )
 
 
 if __name__ == "__main__":
