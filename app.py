@@ -71,7 +71,7 @@ def main():
     The main function that runs the Streamlit app.
     """
 
-    if "OPENAI_API_KEY" in st.secrets:
+    if st.secrets.OPENAI_API_KEY:
         openai_api_key = st.secrets.OPENAI_API_KEY
     else:
         openai_api_key = st.sidebar.text_input("OpenAI API Key", type="password")
@@ -89,7 +89,7 @@ def main():
 
     if prompt := st.chat_input(
         placeholder="Chat with your document",
-        disabled=(not st.secrets.OPENAI_API_KEY),
+        disabled=(not openai_api_key),
     ):
         st.session_state.messages.append(User(message=prompt).build_message())
         st.chat_message(ChatProfileRoleEnum.User).write(prompt)
