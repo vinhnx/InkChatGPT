@@ -47,7 +47,7 @@ def load_and_process_file(file_data):
         chunk_overlap=200,
     )
     chunks = text_splitter.split_documents(documents)
-    embeddings = OpenAIEmbeddings(openai_api_key=st.session_state.api_key)
+    embeddings = OpenAIEmbeddings(openai_api_key=st.secrets.openai_api_key)
     vector_store = Chroma.from_documents(chunks, embeddings)
     return vector_store
 
@@ -60,7 +60,7 @@ def initialize_chat_model(vector_store):
     llm = ChatOpenAI(
         model="gpt-3.5-turbo",
         temperature=0,
-        openai_api_key=st.session_state.api_key,
+        openai_api_key=st.secrets.openai_api_key,
     )
     retriever = vector_store.as_retriever()
     return ConversationalRetrievalChain.from_llm(llm, retriever)
@@ -71,6 +71,15 @@ def main():
     The main function that runs the Streamlit app.
     """
 
+    if "openai_api_key" in st.secrets:
+        openai_api_key = st.secrets.openai_api_key
+    else:
+        openai_api_key = st.sidebar.text_input("OpenAI API Key", type="password")
+        st.secrets.openai_api_key = openai_api_key
+
+        if not st.secrets.openai_api_key:
+            st.info("Please add your OpenAI API key to continue.")
+
     assistant_message = "Hello, you can upload a document and chat with me to ask questions related to its content. Start by adding OpenAI API Key in the sidebar."
     st.session_state["messages"] = [
         Assistant(message=assistant_message).build_message()
@@ -80,7 +89,7 @@ def main():
 
     if prompt := st.chat_input(
         placeholder="Chat with your document",
-        disabled=(not st.session_state.api_key),
+        disabled=(not st.secrets.openai_api_key),
     ):
         st.session_state.messages.append(User(message=prompt).build_message())
         st.chat_message(ChatProfileRoleEnum.User).write(prompt)
@@ -112,7 +121,7 @@ def handle_question(question):
     with st.chat_message(ChatProfileRoleEnum.Assistant):
         stream_handler = StreamHandler(st.empty())
         llm = ChatOpenAI(
-            openai_api_key=st.session_state.api_key,
+            openai_api_key=st.secrets.openai_api_key,
             streaming=True,
             callbacks=[stream_handler],
         )
@@ -146,36 +155,24 @@ def clear_history():
 def build_sidebar():
     with st.sidebar:
         st.title("📚 InkChatGPT")
-
-        openai_api_key = st.text_input(
-            "OpenAI API Key",
-            type="password",
-            placeholder="Enter your OpenAI API key",
+        uploaded_file = st.file_uploader(
+            "Select a file", type=["pdf", "docx", "txt"], key="file_uploader"
         )
 
-        st.session_state.api_key = openai_api_key
+        add_file = st.button(
+            "Process File",
+            disabled=(not uploaded_file and not st.secrets.openai_api_key),
+        )
+        if add_file and uploaded_file and st.secrets.openai_api_key.startswith("sk-"):
+            with st.spinner("💭 Thinking..."):
+                vector_store = load_and_process_file(uploaded_file)
 
-        if not openai_api_key:
-            st.info("Please add your OpenAI API key to continue.")
-        else:
-            uploaded_file = st.file_uploader(
-                "Select a file", type=["pdf", "docx", "txt"], key="file_uploader"
-            )
-
-            add_file = st.button(
-                "Process File",
-                disabled=(not uploaded_file and not openai_api_key),
-            )
-            if add_file and uploaded_file and openai_api_key.startswith("sk-"):
-                with st.spinner("💭 Thinking..."):
-                    vector_store = load_and_process_file(uploaded_file)
-
-                    if vector_store:
-                        crc = initialize_chat_model(vector_store)
-                        st.session_state.crc = crc
-                        st.chat_message(ChatProfileRoleEnum.Assistant).write(
-                            f"File: `{uploaded_file.name}`, processed successfully!"
-                        )
+                if vector_store:
+                    crc = initialize_chat_model(vector_store)
+                    st.session_state.crc = crc
+                    st.chat_message(ChatProfileRoleEnum.Assistant).write(
+                        f"File: `{uploaded_file.name}`, processed successfully!"
+                    )
 
 
 if __name__ == "__main__":
