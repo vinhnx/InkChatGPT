@@ -1,21 +1,20 @@
 import os
 import streamlit as st
 
-from token_stream_handler import StreamHandler
-from chat_profile import User, Assistant, ChatProfileRoleEnum
-
-from langchain.chains import ConversationalRetrievalChain
+from chat_profile import ChatProfileRoleEnum
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import Docx2txtLoader, PyPDFLoader, TextLoader
 from langchain_community.vectorstores.chroma import Chroma
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_community.chat_message_histories import StreamlitChatMessageHistory
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables.history import RunnableWithMessageHistory
 
-__import__("pysqlite3")
-import sys
-
-sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
-
+# config page
 st.set_page_config(page_title="InkChatGPT", page_icon="📚")
+
+# Set up memory
+msgs = StreamlitChatMessageHistory(key="langchain_messages")
 
 
 def load_and_process_file(file_data):
@@ -52,20 +51,6 @@ def load_and_process_file(file_data):
     return vector_store
 
 
-def initialize_chat_model(vector_store):
-    """
-    Initialize the chat model with the given vector store.
-    Returns a ConversationalRetrievalChain instance.
-    """
-    llm = ChatOpenAI(
-        model="gpt-3.5-turbo",
-        temperature=0,
-        openai_api_key=st.secrets.OPENAI_API_KEY,
-    )
-    retriever = vector_store.as_retriever()
-    return ConversationalRetrievalChain.from_llm(llm, retriever)
-
-
 def main():
     """
     The main function that runs the Streamlit app.
@@ -80,78 +65,51 @@ def main():
         if not st.secrets.OPENAI_API_KEY:
             st.info("Please add your OpenAI API key to continue.")
 
-    assistant_message = """
-    Hello, you can upload a document and chat with me to ask questions related to its content.
+    if len(msgs.messages) == 0:
+        msgs.add_ai_message(
+            """
+            Hello, how can I help you?
 
-    Start by adding OpenAI API Key in the sidebar.
-    """
-    st.session_state["messages"] = [
-        Assistant(message=assistant_message).build_message()
-    ]
+            You can upload a document and chat with me to ask questions related to its content.
+        """
+        )
 
-    if prompt := st.chat_input(
+    # Render current messages from StreamlitChatMessageHistory
+    for msg in msgs.messages:
+        st.chat_message(msg.type).write(msg.content)
+
+    # If user inputs a new prompt, generate and draw a new response
+    if question := st.chat_input(
         placeholder="Chat with your document",
         disabled=(not openai_api_key),
     ):
-        st.session_state.messages.append(User(message=prompt).build_message())
-        st.chat_message(ChatProfileRoleEnum.User).write(prompt)
+        st.chat_message(ChatProfileRoleEnum.Human).write(question)
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", "You are an AI chatbot having a conversation with a human."),
+                MessagesPlaceholder(variable_name="history"),
+                (ChatProfileRoleEnum.Human, f"{question}"),
+            ]
+        )
 
-        handle_question(prompt)
-
-
-def handle_question(question):
-    """
-    Handles the user's question by generating a response and updating the chat history.
-    """
-    crc = st.session_state.crc
-
-    if "history" not in st.session_state:
-        st.session_state["history"] = []
-
-    response = crc.run(
-        {
-            "question": question,
-            "chat_history": st.session_state["history"],
-        }
-    )
-
-    st.session_state["history"].append((question, response))
-
-    for msg in st.session_state.messages:
-        st.chat_message(msg.role).write(msg.content)
-
-    with st.chat_message(ChatProfileRoleEnum.Assistant):
-        stream_handler = StreamHandler(st.empty())
         llm = ChatOpenAI(
             openai_api_key=st.secrets.OPENAI_API_KEY,
-            streaming=True,
-            callbacks=[stream_handler],
-        )
-        response = llm.invoke(st.session_state.messages)
-        st.session_state.messages.append(
-            Assistant(message=response.content).build_message()
+            temperature=0.0,
+            model_name="gpt-3.5-turbo",
         )
 
+        chain = prompt | llm
+        chain_with_history = RunnableWithMessageHistory(
+            chain,
+            lambda session_id: msgs,
+            input_messages_key="question",
+            history_messages_key="history",
+        )
 
-def display_chat_history():
-    """
-    Displays the chat history in the Streamlit app.
-    """
-
-    if "history" in st.session_state:
-        st.markdown("## Chat History")
-        for q, a in st.session_state["history"]:
-            st.markdown(f"**Question:** {q}")
-            st.write(a)
-            st.write("---")
-
-
-def clear_history():
-    """
-    Clear the chat history stored in the session state.
-    """
-    if "history" in st.session_state:
-        del st.session_state["history"]
+        # Note: new messages are saved to history automatically by Langchain during run
+        config = {"configurable": {"session_id": "any"}}
+        response = chain_with_history.invoke({"question": question}, config)
+        st.chat_message(ChatProfileRoleEnum.AI).write(response.content)
 
 
 def build_sidebar():
@@ -170,10 +128,12 @@ def build_sidebar():
                 vector_store = load_and_process_file(uploaded_file)
 
                 if vector_store:
-                    crc = initialize_chat_model(vector_store)
-                    st.session_state.crc = crc
-                    st.chat_message(ChatProfileRoleEnum.Assistant).write(
-                        f"File: `{uploaded_file.name}`, processed successfully!"
+                    msgs.add_ai_message(
+                        f"""
+                        File: `{uploaded_file.name}`, processed successfully!
+
+                        Feel free to ask me any question.
+                        """
                     )
 
 
