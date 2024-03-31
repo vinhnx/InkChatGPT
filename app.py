@@ -2,8 +2,9 @@ import os
 import streamlit as st
 
 from token_stream_handler import StreamHandler
+from chat_profile import User, Assistant, ChatProfileRoleEnum
+
 from langchain.chains import ConversationalRetrievalChain
-from langchain.schema import ChatMessage
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import Docx2txtLoader, PyPDFLoader, TextLoader
 from langchain_community.vectorstores.chroma import Chroma
@@ -67,22 +68,17 @@ def main():
 
     assistant_message = "Hello, you can upload a document and chat with me to ask questions related to its content."
     st.session_state["messages"] = [
-        ChatMessage(role="assistant", content=assistant_message)
+        Assistant(message=assistant_message).build_message()
     ]
 
-    st.chat_message("assistant").write(assistant_message)
+    st.chat_message(ChatProfileRoleEnum.Assistant).write(assistant_message)
 
     if prompt := st.chat_input(
         placeholder="Chat with your document",
         disabled=(not st.session_state.api_key),
     ):
-        st.session_state.messages.append(
-            ChatMessage(
-                role="user",
-                content=prompt,
-            )
-        )
-        st.chat_message("user").write(prompt)
+        st.session_state.messages.append(User(message=prompt).build_message())
+        st.chat_message(ChatProfileRoleEnum.User).write(prompt)
 
         handle_question(prompt)
 
@@ -108,7 +104,7 @@ def handle_question(question):
     for msg in st.session_state.messages:
         st.chat_message(msg.role).write(msg.content)
 
-    with st.chat_message("assistant"):
+    with st.chat_message(ChatProfileRoleEnum.Assistant):
         stream_handler = StreamHandler(st.empty())
         llm = ChatOpenAI(
             openai_api_key=st.session_state.api_key,
@@ -117,7 +113,7 @@ def handle_question(question):
         )
         response = llm.invoke(st.session_state.messages)
         st.session_state.messages.append(
-            ChatMessage(role="assistant", content=response.content)
+            Assistant(message=response.content).build_message()
         )
 
 
