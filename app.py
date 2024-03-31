@@ -2,6 +2,9 @@ import os
 import tempfile
 
 import streamlit as st
+from streamlit_extras.add_vertical_space import add_vertical_space
+from streamlit_extras.colored_header import colored_header
+
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.chains import ConversationalRetrievalChain
 from langchain.chat_models import ChatOpenAI
@@ -13,8 +16,14 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import DocArrayInMemorySearch
 
 st.set_page_config(page_title="📚 InkChatGPT: Chat with Documents", page_icon="📚")
-st.subheader("📚 InkChatGPT")
-st.write("Chat with Documents")
+
+add_vertical_space(30)
+colored_header(
+    label="📚 InkChatGPT",
+    description="Chat with Documents",
+    color_name="light-blue-70",
+)
+
 
 @st.cache_resource(ttl="1h")
 def configure_retriever(uploaded_files):
@@ -81,6 +90,7 @@ class PrintRetrievalHandler(BaseCallbackHandler):
 
 
 openai_api_key = st.sidebar.text_input("OpenAI API Key", type="password")
+
 if not openai_api_key:
     st.info("Please add your OpenAI API key to continue.")
     st.stop()
