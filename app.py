@@ -2,6 +2,7 @@ import os
 import tempfile
 
 import streamlit as st
+from chat_profile import ChatProfileRoleEnum
 
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.chains import ConversationalRetrievalChain
@@ -20,10 +21,26 @@ from streamlit_extras.add_vertical_space import add_vertical_space
 # TODO: hide side bar
 # TODO: make the page attactive
 
-st.set_page_config(page_title=":books: InkChatGPT: Chat with Documents", page_icon="📚")
+# configs
+LLM_MODEL_NAME = "gpt-3.5-turbo"
+EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 
-st.image("./assets/icon.jpg", width=150)
-st.header(":gray[:books: InkChatGPT]", divider="blue")
+st.set_page_config(
+    page_title=":books: InkChatGPT: Chat with Documents",
+    page_icon="📚",
+    initial_sidebar_state="collapsed",
+    menu_items={
+        "Get Help": "https://x.com/vinhnx",
+        "Report a bug": "https://github.com/vinhnx/InkChatGPT/issues",
+        "About": "InkChatGPT is a Streamlit application that allows users to upload PDF documents and engage in a conversational Q&A with a language model (LLM) based on the content of those documents.",
+    },
+)
+
+st.image("./assets/icon.jpg", width=100)
+st.header(
+    ":gray[:books: InkChatGPT]",
+    divider="blue",
+)
 st.write("**Chat** with Documents")
 
 # Setup memory for contextual conversation
@@ -47,7 +64,7 @@ def configure_retriever(uploaded_files):
     splits = text_splitter.split_documents(docs)
 
     # Create embeddings and store in vectordb
-    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL_NAME)
     vectordb = DocArrayInMemorySearch.from_documents(splits, embeddings)
 
     # Define retriever
@@ -119,7 +136,7 @@ if uploaded_files:
 
     # Setup LLM and QA chain
     llm = ChatOpenAI(
-        model_name="gpt-3.5-turbo",
+        model_name=LLM_MODEL_NAME,
         openai_api_key=openai_api_key,
         temperature=0,
         streaming=True,
@@ -129,7 +146,11 @@ if uploaded_files:
         llm, retriever=retriever, memory=memory, verbose=False
     )
 
-    avatars = {"human": "user", "ai": "assistant"}
+    avatars = {
+        ChatProfileRoleEnum.Human: "user",
+        ChatProfileRoleEnum.AI: "assistant",
+    }
+
     for msg in msgs.messages:
         st.chat_message(avatars[msg.type]).write(msg.content)
 
