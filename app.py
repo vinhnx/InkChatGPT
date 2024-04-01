@@ -23,14 +23,20 @@ st.set_page_config(
     },
 )
 
+# Hide Header
+st.markdown(
+    """<style>.stApp [data-testid="stToolbar"]{display:none;}</style>""",
+    unsafe_allow_html=True,
+)
+
 # Setup memory for contextual conversation
 msgs = StreamlitChatMessageHistory()
 
 with st.container():
-    col1, col2 = st.columns([0.2, 0.8])
+    col1, col2 = st.columns([0.22, 0.8])
     with col1:
         st.image(
-            "./assets/large_icon.png", use_column_width="always", output_format="PNG"
+            "./assets/app_icon.png", use_column_width="always", output_format="PNG"
         )
     with col2:
         st.header(":books: InkChatGPT")
