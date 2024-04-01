@@ -2,8 +2,6 @@ import os
 import tempfile
 
 import streamlit as st
-from streamlit_extras.add_vertical_space import add_vertical_space
-from streamlit_extras.colored_header import colored_header
 
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.chains import ConversationalRetrievalChain
@@ -14,15 +12,22 @@ from langchain.memory import ConversationBufferMemory
 from langchain.memory.chat_message_histories import StreamlitChatMessageHistory
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import DocArrayInMemorySearch
+from streamlit_extras.add_vertical_space import add_vertical_space
 
-st.set_page_config(page_title="📚 InkChatGPT: Chat with Documents", page_icon="📚")
+# TODO: refactor
+# TODO: extract class
+# TODO: modularize
+# TODO: hide side bar
+# TODO: make the page attactive
 
-add_vertical_space(30)
-colored_header(
-    label="📚 InkChatGPT",
-    description="Chat with Documents",
-    color_name="light-blue-70",
-)
+st.set_page_config(page_title=":books: InkChatGPT: Chat with Documents", page_icon="📚")
+
+st.image("./assets/icon.jpg", width=150)
+st.header(":gray[:books: InkChatGPT]", divider="blue")
+st.write("**Chat** with Documents")
+
+# Setup memory for contextual conversation
+msgs = StreamlitChatMessageHistory()
 
 
 @st.cache_resource(ttl="1h")
@@ -75,66 +80,65 @@ class StreamHandler(BaseCallbackHandler):
 
 class PrintRetrievalHandler(BaseCallbackHandler):
     def __init__(self, container):
-        self.status = container.status("**Context Retrieval**")
+        self.status = container.status("**Thinking...**")
+        self.container = container
 
     def on_retriever_start(self, serialized: dict, query: str, **kwargs):
-        self.status.write(f"**Question:** {query}")
-        self.status.update(label=f"**Context Retrieval:** {query}")
+        self.status.write(f"**Checking document for query:** `{query}`. Please wait...")
 
     def on_retriever_end(self, documents, **kwargs):
-        for idx, doc in enumerate(documents):
-            source = os.path.basename(doc.metadata["source"])
-            self.status.write(f"**Document {idx} from {source}**")
-            self.status.markdown(doc.page_content)
-        self.status.update(state="complete")
+        self.container.empty()
 
 
-openai_api_key = st.sidebar.text_input("OpenAI API Key", type="password")
+with st.sidebar.expander("Documents"):
+    st.subheader("Files")
+    uploaded_files = st.file_uploader(
+        label="Select PDF files", type=["pdf"], accept_multiple_files=True
+    )
+
+
+with st.sidebar.expander("Setup"):
+    st.subheader("API Key")
+    openai_api_key = st.text_input("OpenAI API Key", type="password")
+
+    is_empty_chat_messages = len(msgs.messages) == 0
+    if is_empty_chat_messages or st.button("Clear message history"):
+        msgs.clear()
+        msgs.add_ai_message("How can I help you?")
 
 if not openai_api_key:
-    st.info("Please add your OpenAI API key to continue.")
+    st.info("Please add your OpenAI API key in the sidebar to continue.")
     st.stop()
 
-uploaded_files = st.sidebar.file_uploader(
-    label="Upload PDF files", type=["pdf"], accept_multiple_files=True
-)
-if not uploaded_files:
-    st.info("Please upload PDF documents to continue.")
-    st.stop()
+if uploaded_files:
+    retriever = configure_retriever(uploaded_files)
 
-retriever = configure_retriever(uploaded_files)
+    memory = ConversationBufferMemory(
+        memory_key="chat_history", chat_memory=msgs, return_messages=True
+    )
 
-# Setup memory for contextual conversation
-msgs = StreamlitChatMessageHistory()
-memory = ConversationBufferMemory(
-    memory_key="chat_history", chat_memory=msgs, return_messages=True
-)
+    # Setup LLM and QA chain
+    llm = ChatOpenAI(
+        model_name="gpt-3.5-turbo",
+        openai_api_key=openai_api_key,
+        temperature=0,
+        streaming=True,
+    )
 
-# Setup LLM and QA chain
-llm = ChatOpenAI(
-    model_name="gpt-3.5-turbo",
-    openai_api_key=openai_api_key,
-    temperature=0,
-    streaming=True,
-)
-qa_chain = ConversationalRetrievalChain.from_llm(
-    llm, retriever=retriever, memory=memory, verbose=True
-)
+    chain = ConversationalRetrievalChain.from_llm(
+        llm, retriever=retriever, memory=memory, verbose=False
+    )
 
-if len(msgs.messages) == 0 or st.sidebar.button("Clear message history"):
-    msgs.clear()
-    msgs.add_ai_message("How can I help you?")
+    avatars = {"human": "user", "ai": "assistant"}
+    for msg in msgs.messages:
+        st.chat_message(avatars[msg.type]).write(msg.content)
 
-avatars = {"human": "user", "ai": "assistant"}
-for msg in msgs.messages:
-    st.chat_message(avatars[msg.type]).write(msg.content)
+    if user_query := st.chat_input(placeholder="Ask me anything!"):
+        st.chat_message("user").write(user_query)
 
-if user_query := st.chat_input(placeholder="Ask me anything!"):
-    st.chat_message("user").write(user_query)
-
-    with st.chat_message("assistant"):
-        retrieval_handler = PrintRetrievalHandler(st.container())
-        stream_handler = StreamHandler(st.empty())
-        response = qa_chain.run(
-            user_query, callbacks=[retrieval_handler, stream_handler]
-        )
+        with st.chat_message("assistant"):
+            retrieval_handler = PrintRetrievalHandler(st.empty())
+            stream_handler = StreamHandler(st.empty())
+            response = chain.run(
+                user_query, callbacks=[retrieval_handler, stream_handler]
+            )
