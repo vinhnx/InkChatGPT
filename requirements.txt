@@ -6,3 +6,4 @@ streamlit
 streamlit_chat
 streamlit-extras
 pypdf
+docx2txt
