@@ -2,7 +2,15 @@
   <img alt="app icon" height="196px" src="./assets/icon.jpg">
 </div>
 
-# 📚 [InkChatGPT](https://inkchatgpt.streamlit.app) [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://inkchatgpt.streamlit.app)
+<div align="center">
+<h3> 📚 InkChatGPT - Chat with Documents </h3>
+</div>
+
+<div align="center">
+   <a href="https://inkchatgpt.streamlit.app/"><img src="https://static.streamlit.io/badges/streamlit_badge_black_white.svg"></a>
+</div>
+
+---
 
 `InkChatGPT` is a `Streamlit` application that allows users to upload PDF documents and engage in a conversational Q&A with a language model (`LLM`) based on the content of those documents.
 
