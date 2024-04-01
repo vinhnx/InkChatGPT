@@ -1,22 +1,37 @@
-<div align="center">
-  <img alt="app icon" height="196px" src="./assets/app_icon.jpg">
-</div>
+<p align="center">
+  <img src="./assets/large_icon.png" height="200" alt="icon" />
+</p>
 
-<div align="center">
-<h3> 📚 InkChatGPT - Chat with Documents </h3>
-</div>
+<p align="center">
+  <em>📚 InkChatGPT - Chat with Documents</em>
+</p>
 
-<div align="center">
+<p align="center">
    <a href="https://inkchatgpt.streamlit.app/"><img src="https://static.streamlit.io/badges/streamlit_badge_black_white.svg"></a>
-</div>
+</p>
 
----
+<p align="center">
+<b><a href="https://x.com/vinhnx">Twitter</a>
+<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+<a href="https://github.com/vinhnx">GitHub</a></b>
+</p>
+
+# InkChatGPT
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+![GitHub User's stars](https://img.shields.io/github/stars/vinhnx)
+![HackerNews User Karma](https://img.shields.io/hackernews/user-karma/vinhnx)
+[![X (formerly Twitter) Follow](https://img.shields.io/twitter/follow/vinhnx)](https://x.com/vinhnx)
 
 `InkChatGPT` is a `Streamlit` application that allows users to upload PDF documents and engage in a conversational Q&A with a language model (`LLM`) based on the content of those documents.
 
-## Features
+Building AI agents? Check out [AgentOps](https://agentops.ai/?tokencost)
 
--   Upload any PDF documents and start asking key information about it
+### Features
+
+-   Upload any PDF documents and start asking key information about it, currently supports: PDF, TXT, DOCX, EPUB
+-   Limit 200MB per file
 -   Conversational Q&A with LLM (powered by `OpenAI`'s GPT-3.5-turbo model)
 -   Use `HuggingFace` embeddings to generate embeddings for the document chunks with `all-MiniLM-L6-v2` model.
 -   Clear conversation history
