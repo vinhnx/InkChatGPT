@@ -7,7 +7,7 @@ from chat_profile import ChatProfileRoleEnum
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.chains import ConversationalRetrievalChain
 from langchain.chat_models import ChatOpenAI
-from langchain.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import Docx2txtLoader, PyPDFLoader, TextLoader
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.memory import ConversationBufferMemory
 from langchain.memory.chat_message_histories import StreamlitChatMessageHistory
@@ -56,7 +56,21 @@ def configure_retriever(uploaded_files):
         temp_filepath = os.path.join(temp_dir.name, file.name)
         with open(temp_filepath, "wb") as f:
             f.write(file.getvalue())
-        loader = PyPDFLoader(temp_filepath)
+
+        _, extension = os.path.splitext(temp_filepath)
+
+        # Load the file using the appropriate loader
+        if extension == ".pdf":
+            loader = PyPDFLoader(temp_filepath)
+        elif extension == ".docx":
+            loader = Docx2txtLoader(temp_filepath)
+        elif extension == ".txt":
+            loader = TextLoader(temp_filepath)
+        else:
+            st.write("This document format is not supported!")
+            return None
+
+        # loader = PyPDFLoader(temp_filepath)
         docs.extend(loader.load())
 
     # Split documents
@@ -110,7 +124,7 @@ class PrintRetrievalHandler(BaseCallbackHandler):
 with st.sidebar.expander("Documents"):
     st.subheader("Files")
     uploaded_files = st.file_uploader(
-        label="Select PDF files", type=["pdf"], accept_multiple_files=True
+        label="Select files", type=["pdf", "txt", "docx"], accept_multiple_files=True
     )
 
 
