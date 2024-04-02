@@ -8,3 +8,4 @@ streamlit-extras
 pypdf
 docx2txt
 unstructured
+tiktoken
