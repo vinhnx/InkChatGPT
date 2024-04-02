@@ -51,7 +51,7 @@ with settings_tab:
 with documents_tab:
     uploaded_files = st.file_uploader(
         label="Select files",
-        type=["pdf", "txt", "docx", "epub"],
+        type=["pdf", "txt", "docx"],
         accept_multiple_files=True,
         disabled=(not openai_api_key),
     )
