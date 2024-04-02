@@ -12,10 +12,6 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import DocArrayInMemorySearch
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-# disable tokenizer transformer parallelism to avoid deadlocks
-# https://github.com/huggingface/transformers/issues/5486
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
-
 
 @st.cache_resource(ttl="1h")
 def configure_retriever(files):
