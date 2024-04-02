@@ -2,17 +2,19 @@ import os
 import tempfile
 
 import streamlit as st
-from langchain.embeddings import HuggingFaceEmbeddings
 from langchain_community.document_loaders import (
     Docx2txtLoader,
     PyPDFLoader,
     TextLoader,
     UnstructuredEPubLoader,
 )
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import DocArrayInMemorySearch
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
+# disable tokenizer transformer parallelism to avoid deadlocks
+# https://github.com/huggingface/transformers/issues/5486
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
 @st.cache_resource(ttl="1h")
@@ -47,7 +49,7 @@ def configure_retriever(files):
     splits = text_splitter.split_documents(docs)
 
     # Create embeddings and store in vectordb
-    embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL_NAME)
+    embeddings = HuggingFaceEmbeddings(model_name="all-mpnet-base-v2")
     vectordb = DocArrayInMemorySearch.from_documents(splits, embeddings)
 
     # Define retriever
