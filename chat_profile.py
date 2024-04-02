@@ -2,5 +2,5 @@ from enum import Enum
 
 
 class ChatProfileRoleEnum(str, Enum):
-    Human = "human"
+    HUMAN = "human"
     AI = "ai"
