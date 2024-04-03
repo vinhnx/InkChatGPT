@@ -20,8 +20,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-![GitHub User's stars](https://img.shields.io/github/stars/vinhnx)
-![HackerNews User Karma](https://img.shields.io/hackernews/user-karma/vinhnx)
+[![GitHub User's stars](https://img.shields.io/github/stars/vinhnx)](https://github.com/vinhnx)
+[![HackerNews User Karma](https://img.shields.io/hackernews/user-karma/vinhnx)](https://news.ycombinator.com/user?id=vinhnx)
 [![X (formerly Twitter) Follow](https://img.shields.io/twitter/follow/vinhnx)](https://x.com/vinhnx)
 
 `InkChatGPT` is a `Streamlit` application that allows users to upload PDF documents and engage in a conversational Q&A with a language model (`LLM`) based on the content of those documents.
@@ -30,10 +30,9 @@
 
 -   Upload any PDF documents and start asking key information about it, currently supports: PDF, TXT, DOCX, EPUB
 -   Limit 200MB per file
--   Conversational Q&A with LLM (powered by `OpenAI`'s GPT-3.5-turbo model)
--   Use `HuggingFace` embeddings to generate embeddings for the document chunks with `all-MiniLM-L6-v2` model.
--   Clear conversation history
--   Responsive UI with loading indicators and chat interface
+-   Conversational Q&A with LLM (powered by `OpenAI`'s `gpt-3.5-turbo` model)
+-   `HuggingFace` embeddings to generate embeddings for the document chunks with `all-MiniLM-L6-v2` model.
+-   `VectorDB` for document vector retrieval storage
 
 ## Prerequisites
 
