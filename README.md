@@ -28,7 +28,7 @@
 
 ### Features
 
--   Upload any PDF documents and start asking key information about it, currently supports: PDF, TXT, DOCX, EPUB
+-   Upload any documents and start asking key information about it, currently supports: PDF, TXT, DOCX, EPUB
 -   Limit 200MB per file
 -   Conversational Q&A with LLM (powered by `OpenAI`'s `gpt-3.5-turbo` model)
 -   `HuggingFace` embeddings to generate embeddings for the document chunks with `all-MiniLM-L6-v2` model.
