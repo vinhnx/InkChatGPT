@@ -64,7 +64,10 @@ pip install -r requirements.txt
 ## Usage
 
 1. Set the `OPENAI_API_KEY` environment variable with your OpenAI API key:
-   export OPENAI_API_KEY=YOUR_API_KEY
+
+```sh
+export OPENAI_API_KEY=YOUR_API_KEY
+```
 
 2. Run the Streamlit app:
 
