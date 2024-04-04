@@ -48,11 +48,12 @@ git clone https://github.com/vinhnx/InkChatGPT.git
 cd InkChatGPT
 ```
 
-2. Create a virtual environment and activate it:
+2. Setup Virtual Environment
+We recommend setting up a virtual environment to isolate Python dependencies, ensuring project-specific packages without conflicting with system-wide installations.
 
 ```sh
-python -m venv env
-source env/bin/activate
+python3 -m venv venv
+source venv/bin/activate
 ```
 
 3. Install the required dependencies:
