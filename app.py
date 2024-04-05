@@ -39,8 +39,17 @@ with st.container():
         )
     with col2:
         st.header(":books: InkChatGPT")
-        st.write("**Chat** with Documents")
-        st.caption("Supports PDF, TXT, DOCX, EPUB • Limit 200MB per file")
+        st.caption(
+            """
+            Simple Retrieval Augmented Generation (RAG) LLM application that allows users to upload PDF documents and engage in a conversational Q&A, with a language model (LLM) based on the content of those documents.
+            
+            Think of it as ChatGPT for your documents.
+                    
+            Supports PDF, TXT, DOCX • Limit 200MB per file.
+            * GitHub: https://github.com/vinhnx/InkChatGPT
+            * Twitter: https://x.com/vinhnx
+            """
+        )
 
 chat_tab, documents_tab, settings_tab = st.tabs(["Chat", "Documents", "Settings"])
 with settings_tab:
