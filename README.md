@@ -1,3 +1,12 @@
+---
+title: InkChatGPT
+emoji: 📚
+sdk: streamlit
+sdk_version: 1.25.0 # The latest supported version
+app_file: app.py
+pinned: true
+---
+
 <p align="center">
   <img src="./assets/large_icon.png" height="200" alt="icon" />
 </p>
@@ -49,7 +58,7 @@ cd InkChatGPT
 ```
 
 2. Setup Virtual Environment
-We recommend setting up a virtual environment to isolate Python dependencies, ensuring project-specific packages without conflicting with system-wide installations.
+   We recommend setting up a virtual environment to isolate Python dependencies, ensuring project-specific packages without conflicting with system-wide installations.
 
 ```sh
 python3 -m venv venv
