@@ -14,15 +14,17 @@ st.set_page_config(
     menu_items={
         "Get Help": "https://x.com/vinhnx",
         "Report a bug": "https://github.com/vinhnx/InkChatGPT/issues",
-        "About": "InkChatGPT is a Streamlit application that allows users to upload PDF documents and engage in a conversational Q&A with a language model (LLM) based on the content of those documents.",
+        "About": """InkChatGPT is a simple Retrieval Augmented Generation (RAG) application that allows users to upload PDF documents and engage in a conversational Q&A, with a language model (LLM) based on the content of those documents.
+        
+        GitHub: https://github.com/vinhnx/InkChatGPT""",
     },
 )
 
 # Hide Header
-st.markdown(
-    """<style>.stApp [data-testid="stToolbar"]{display:none;}</style>""",
-    unsafe_allow_html=True,
-)
+# st.markdown(
+#     """<style>.stApp [data-testid="stToolbar"]{display:none;}</style>""",
+#     unsafe_allow_html=True,
+# )
 
 # Setup memory for contextual conversation
 msgs = StreamlitChatMessageHistory()
