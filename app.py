@@ -48,9 +48,9 @@ with settings_tab:
         msgs.add_ai_message("""
         Hi, your uploaded document(s) had been analyzed. 
         
-        Feel free to ask me any questions? 
+        Feel free to ask me any questions.
         
-        For example: you can start by asking me 'What is the title of the book, and who is author!'
+        For example: you can start by asking me 'What is the title of the book, and who is author!' 
         """)
 
 with documents_tab:
