@@ -17,6 +17,8 @@ pinned: true
 
 <p align="center">
    <a href="https://inkchatgpt.streamlit.app/"><img src="https://static.streamlit.io/badges/streamlit_badge_black_white.svg"></a>
+  
+  <a href="https://huggingface.co/spaces/vinhnx90/inkchatgpt/">🤗 Hugging Face</a>
 </p>
 
 <p align="center">
