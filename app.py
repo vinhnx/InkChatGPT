@@ -1,11 +1,12 @@
 import streamlit as st
+from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
 from langchain.memory.chat_message_histories import StreamlitChatMessageHistory
 from langchain_community.chat_models import ChatOpenAI
+
 from calback_handler import PrintRetrievalHandler, StreamHandler
 from chat_profile import ChatProfileRoleEnum
 from document_retriever import configure_retriever
-from langchain.chains import ConversationalRetrievalChain
 
 st.set_page_config(
     page_title="InkChatGPT: Chat with Documents",
