@@ -45,7 +45,13 @@ with settings_tab:
     openai_api_key = st.text_input("OpenAI API Key", type="password")
     if len(msgs.messages) == 0 or st.button("Clear message history"):
         msgs.clear()
-        msgs.add_ai_message("How can I help you?")
+        msgs.add_ai_message("""
+        Hi, your uploaded document(s) had been analyzed. 
+        
+        Feel free to ask me any questions? 
+        
+        For example: you can start by asking me 'What is the title of the book, and who is author!'
+        """)
 
 with documents_tab:
     uploaded_files = st.file_uploader(
