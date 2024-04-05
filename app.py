@@ -8,6 +8,8 @@ from calback_handler import PrintRetrievalHandler, StreamHandler
 from chat_profile import ChatProfileRoleEnum
 from document_retriever import configure_retriever
 
+LLM_MODEL = "gpt-3.5-turbo"
+
 st.set_page_config(
     page_title="InkChatGPT: Chat with Documents",
     page_icon="📚",
@@ -58,9 +60,7 @@ with settings_tab:
         msgs.add_ai_message("""
         Hi, your uploaded document(s) had been analyzed. 
         
-        Feel free to ask me any questions.
-        
-        For example: you can start by asking me 'What is the title of the book, and who is author!' 
+        Feel free to ask me any questions. For example: you can start by asking me `'What is this book about?` or `Tell me about the content of this book!`' 
         """)
 
 with documents_tab:
@@ -83,7 +83,7 @@ with chat_tab:
 
         # Setup LLM and QA chain
         llm = ChatOpenAI(
-            model_name="gpt-3.5-turbo",
+            model_name=LLM_MODEL,
             openai_api_key=openai_api_key,
             temperature=0,
             streaming=True,

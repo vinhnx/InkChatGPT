@@ -9,6 +9,8 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import DocArrayInMemorySearch
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
+EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+
 
 @st.cache_resource(ttl="1h")
 def configure_retriever(files, use_compression=False):
@@ -40,7 +42,7 @@ def configure_retriever(files, use_compression=False):
     splits = text_splitter.split_documents(docs)
 
     # Create embeddings and store in vectordb
-    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
     vectordb = DocArrayInMemorySearch.from_documents(splits, embeddings)
 
     # Define retriever
