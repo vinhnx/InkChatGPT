@@ -28,7 +28,7 @@ st.markdown(
 msgs = StreamlitChatMessageHistory()
 
 with st.container():
-    col1, col2 = st.columns([0.3, 0.8])
+    col1, col2 = st.columns([0.2, 0.8])
     with col1:
         st.image(
             "./assets/app_icon.png",
