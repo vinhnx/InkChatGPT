@@ -44,8 +44,6 @@ with st.container():
             """
             Simple Retrieval Augmented Generation (RAG) application that allows users to upload PDF documents and engage in a conversational Q&A, with a language model (LLM) based on the content of those documents. Built with LangChain as Streamlit.
             
-            Think of it as ChatGPT for your documents.
-                    
             Supports PDF, TXT, DOCX • Limit 200MB per file.
             * GitHub: https://github.com/vinhnx/InkChatGPT
             * Twitter: https://x.com/vinhnx
