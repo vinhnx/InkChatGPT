@@ -41,7 +41,7 @@ with st.container():
         st.header(":books: InkChatGPT")
         st.caption(
             """
-            Simple Retrieval Augmented Generation (RAG) LLM application that allows users to upload PDF documents and engage in a conversational Q&A, with a language model (LLM) based on the content of those documents.
+            Simple Retrieval Augmented Generation (RAG) application that allows users to upload PDF documents and engage in a conversational Q&A, with a language model (LLM) based on the content of those documents. Built with LangChain as Streamlit.
             
             Think of it as ChatGPT for your documents.
                     
