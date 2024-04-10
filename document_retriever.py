@@ -9,7 +9,7 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import DocArrayInMemorySearch
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
 
 @st.cache_resource(ttl="1h")
