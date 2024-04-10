@@ -1,8 +1,10 @@
 import streamlit as st
-from langchain.chains import ConversationalRetrievalChain
+from langchain.chains.conversational_retrieval.base import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
-from langchain.memory.chat_message_histories import StreamlitChatMessageHistory
-from langchain_community.chat_models import ChatOpenAI
+from langchain_community.chat_message_histories.streamlit import (
+    StreamlitChatMessageHistory,
+)
+from langchain_community.chat_models.openai import ChatOpenAI
 
 from calback_handler import PrintRetrievalHandler, StreamHandler
 from chat_profile import ChatProfileRoleEnum
@@ -75,35 +77,36 @@ with chat_tab:
     if uploaded_files:
         result_retriever = configure_retriever(uploaded_files)
 
-        memory = ConversationBufferMemory(
-            memory_key="chat_history",
-            chat_memory=msgs,
-            return_messages=True,
-        )
+        if result_retriever is not None:
+            memory = ConversationBufferMemory(
+                memory_key="chat_history",
+                chat_memory=msgs,
+                return_messages=True,
+            )
 
-        # Setup LLM and QA chain
-        llm = ChatOpenAI(
-            model_name=LLM_MODEL,
-            openai_api_key=openai_api_key,
-            temperature=0,
-            streaming=True,
-        )
+            # Setup LLM and QA chain
+            llm = ChatOpenAI(
+                model=LLM_MODEL,
+                api_key=openai_api_key,
+                temperature=0,
+                streaming=True,
+            )
 
-        chain = ConversationalRetrievalChain.from_llm(
-            llm,
-            retriever=result_retriever,
-            memory=memory,
-            verbose=False,
-            max_tokens_limit=4000,
-        )
+            chain = ConversationalRetrievalChain.from_llm(
+                llm,
+                retriever=result_retriever,
+                memory=memory,
+                verbose=False,
+                max_tokens_limit=4000,
+            )
 
-        avatars = {
-            ChatProfileRoleEnum.HUMAN: "user",
-            ChatProfileRoleEnum.AI: "assistant",
-        }
+            avatars = {
+                str(ChatProfileRoleEnum.HUMAN): "user",
+                str(ChatProfileRoleEnum.AI): "assistant",
+            }
 
-        for msg in msgs.messages:
-            st.chat_message(avatars[msg.type]).write(msg.content)
+            for msg in msgs.messages:
+                st.chat_message(avatars[msg.type]).write(msg.content)
 
 if not openai_api_key:
     st.caption("🔑 Add your **OpenAI API key** on the `Settings` to continue.")
