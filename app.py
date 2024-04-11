@@ -101,10 +101,10 @@ with chat_tab:
             )
 
             avatars = {
-                str(ChatProfileRoleEnum.HUMAN): "user",
-                str(ChatProfileRoleEnum.AI): "assistant",
+                ChatProfileRoleEnum.HUMAN: "user",
+                ChatProfileRoleEnum.AI: "assistant",
             }
-
+            
             for msg in msgs.messages:
                 st.chat_message(avatars[msg.type]).write(msg.content)
 
