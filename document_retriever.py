@@ -3,7 +3,8 @@ import tempfile
 
 import streamlit as st
 from langchain.retrievers import ContextualCompressionRetriever
-from langchain.retrievers.document_compressors import EmbeddingsFilter
+
+from langchain_cohere import CohereRerank
 from langchain_community.document_loaders import Docx2txtLoader, PyPDFLoader, TextLoader
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import DocArrayInMemorySearch
@@ -53,10 +54,8 @@ def configure_retriever(files, use_compression=False):
     if not use_compression:
         return retriever
 
-    embeddings_filter = EmbeddingsFilter(
-        embeddings=embeddings, similarity_threshold=0.76
-    )
-
+    compressor = CohereRerank()
     return ContextualCompressionRetriever(
-        base_compressor=embeddings_filter, base_retriever=retriever
+        base_compressor=compressor,
+        base_retriever=retriever,
     )

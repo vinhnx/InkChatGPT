@@ -2,6 +2,7 @@ openai
 sentence-transformers
 docarray
 langchain
+langchain_cohere
 streamlit
 streamlit_chat
 streamlit-extras
