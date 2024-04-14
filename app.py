@@ -112,7 +112,7 @@ if uploaded_files:
 
 if user_query := st.chat_input(
     placeholder="Ask me anything!",
-    disabled=(not openai_api_key and not result_retriever),
+    disabled=(not openai_api_key),
 ):
     st.chat_message("user").write(user_query)
 
