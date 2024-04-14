@@ -59,7 +59,11 @@ with st.sidebar:
 
         if len(msgs.messages) == 0 or st.button("Clear message history"):
             msgs.clear()
-            msgs.add_ai_message("Hello, how can I help you?")
+            msgs.add_ai_message("""
+            Hi, your uploaded document(s) had been analyzed. 
+            
+            Feel free to ask me any questions. For example: you can start by asking me `What is this book about?` or `Tell me about the content of this book!`' 
+            """)
 
     with documents_tab:
         uploaded_files = st.file_uploader(
