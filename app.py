@@ -47,23 +47,19 @@ with st.sidebar:
         with col2:
             st.header(":books: InkChatGPT")
 
-    # chat_tab,
-    documents_tab, settings_tab = st.tabs(
-        [
-            # "Chat",
-            "Documents",
-            "Settings",
-        ]
-    )
+    documents_tab, settings_tab = st.tabs(["Documents", "Settings"])
     with settings_tab:
         openai_api_key = st.text_input("OpenAI API Key", type="password")
+
+        cohere_api_key = ""
+        if st.toggle(
+            label="Use Cohere's Rerank", help="https://txt.cohere.com/rerank/"
+        ):
+            cohere_api_key = st.text_input("Cohere API Key", type="password")
+
         if len(msgs.messages) == 0 or st.button("Clear message history"):
             msgs.clear()
-            msgs.add_ai_message("""
-            Hi, your uploaded document(s) had been analyzed. 
-            
-            Feel free to ask me any questions. For example: you can start by asking me `'What is this book about?` or `Tell me about the content of this book!`' 
-            """)
+            msgs.add_ai_message("Hello, how can I help you?")
 
     with documents_tab:
         uploaded_files = st.file_uploader(
@@ -74,10 +70,12 @@ with st.sidebar:
         )
 
 if not openai_api_key:
-    st.info("🔑 Please Add your **OpenAI API key** on the `Settings` to continue.")
+    st.info("🔑 Please open the `Settings` tab from side bar menu to get started.")
 
 if uploaded_files:
-    result_retriever = configure_retriever(uploaded_files)
+    result_retriever = configure_retriever(
+        uploaded_files, cohere_api_key=cohere_api_key
+    )
 
     if result_retriever is not None:
         memory = ConversationBufferMemory(
