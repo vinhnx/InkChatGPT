@@ -1,22 +1,39 @@
+from sklearn import model_selection
 import streamlit as st
 from langchain.chains.conversational_retrieval.base import ConversationalRetrievalChain
-from langchain.chains.retrieval_qa.base import RetrievalQA
 from langchain.memory import ConversationBufferMemory
+from langchain_cohere import ChatCohere
 from langchain_community.chat_message_histories.streamlit import (
     StreamlitChatMessageHistory,
 )
-from langchain_community.chat_models.openai import ChatOpenAI
+from langchain_openai import ChatOpenAI
 
 from calback_handler import PrintRetrievalHandler, StreamHandler
 from chat_profile import ChatProfileRoleEnum
 from document_retriever import configure_retriever
+from llm_provider import LLMProviderEnum
 
-LLM_MODEL = "gpt-3.5-turbo"
+# Constants
+GPT_LLM_MODEL = "gpt-3.5-turbo"
+COMMAND_R_LLM_MODEL = "command-r"
 
+# Properties
+uploaded_files = []
+api_key = ""
+result_retriever = None
+chain = None
+llm = None
+model_name = ""
+
+# Set up sidebar
+if "sidebar_state" not in st.session_state:
+    st.session_state.sidebar_state = "expanded"
+
+# Streamlit app configuration
 st.set_page_config(
     page_title="InkChatGPT: Chat with Documents",
     page_icon="📚",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state=st.session_state.sidebar_state,
     menu_items={
         "Get Help": "https://x.com/vinhnx",
         "Report a bug": "https://github.com/vinhnx/InkChatGPT/issues",
@@ -25,15 +42,6 @@ st.set_page_config(
         GitHub: https://github.com/vinhnx/InkChatGPT""",
     },
 )
-
-# Hide Header
-# st.markdown(
-#     """<style>.stApp [data-testid="stToolbar"]{display:none;}</style>""",
-#     unsafe_allow_html=True,
-# )
-
-# Setup memory for contextual conversation
-msgs = StreamlitChatMessageHistory()
 
 with st.sidebar:
     with st.container():
@@ -47,39 +55,64 @@ with st.sidebar:
         with col2:
             st.header(":books: InkChatGPT")
 
-    documents_tab, settings_tab = st.tabs(["Documents", "Settings"])
-    with settings_tab:
-        openai_api_key = st.text_input("OpenAI API Key", type="password")
+        # Model
+        selected_model = st.selectbox(
+            "Select a model",
+            options=[
+                LLMProviderEnum.OPEN_AI.value,
+                LLMProviderEnum.COHERE.value,
+            ],
+            index=None,
+            placeholder="Select a model...",
+        )
 
-        cohere_api_key = ""
-        if st.toggle(
-            label="Use Cohere's Rerank", help="https://txt.cohere.com/rerank/"
-        ):
-            cohere_api_key = st.text_input("Cohere API Key", type="password")
+        if selected_model:
+            api_key = st.text_input(f"{selected_model} API Key", type="password")
+            if selected_model == LLMProviderEnum.OPEN_AI:
+                model_name = GPT_LLM_MODEL
+            elif selected_model == LLMProviderEnum.COHERE:
+                model_name = COMMAND_R_LLM_MODEL
 
-        if len(msgs.messages) == 0 or st.button("Clear message history"):
+        msgs = StreamlitChatMessageHistory()
+        if len(msgs.messages) == 0:
             msgs.clear()
             msgs.add_ai_message("""
             Hi, your uploaded document(s) had been analyzed. 
             
-            Feel free to ask me any questions. For example: you can start by asking me `What is this book about?` or `Tell me about the content of this book!`' 
+            Feel free to ask me any questions. For example: you can start by asking me something like: 
+            
+            `What is this context about?`
+            
+            `Help me summarize this!`
             """)
 
-    with documents_tab:
-        uploaded_files = st.file_uploader(
-            label="Select files",
-            type=["pdf", "txt", "docx"],
-            accept_multiple_files=True,
-            disabled=(not openai_api_key),
-        )
+        if api_key:
+            # Documents
+            uploaded_files = st.file_uploader(
+                label="Select files",
+                type=["pdf", "txt", "docx"],
+                accept_multiple_files=True,
+                disabled=(not selected_model),
+            )
 
-if not openai_api_key:
-    st.info("🔑 Please open the `Settings` tab from side bar menu to get started.")
+if api_key and not uploaded_files:
+    st.info("🌟 You can upload some documents to get started")
 
-if uploaded_files:
-    result_retriever = configure_retriever(
-        uploaded_files, cohere_api_key=cohere_api_key
+# Check if a model is selected
+if not selected_model:
+    st.info(
+        "📺 Please select a model first, open the `Settings` tab from side bar menu to get started"
     )
+
+# Check if API key is provided
+if selected_model and len(api_key.strip()) == 0:
+    st.warning(
+        f"🔑 API key for {selected_model} is missing or invalid. Please provide a valid API key."
+    )
+
+# Process uploaded files
+if uploaded_files:
+    result_retriever = configure_retriever(uploaded_files, cohere_api_key=api_key)
 
     if result_retriever is not None:
         memory = ConversationBufferMemory(
@@ -88,37 +121,57 @@ if uploaded_files:
             return_messages=True,
         )
 
-        # Setup LLM and QA chain
-        llm = ChatOpenAI(
-            model=LLM_MODEL,
-            api_key=openai_api_key,
-            temperature=0,
-            streaming=True,
-        )
+        if selected_model == LLMProviderEnum.OPEN_AI:
+            llm = ChatOpenAI(
+                model=model_name,
+                api_key=api_key,
+                temperature=0,
+                streaming=True,
+            )
+        elif selected_model == LLMProviderEnum.COHERE:
+            llm = ChatCohere(
+                model=model_name,
+                temperature=0.3,
+                streaming=True,
+                cohere_api_key=api_key,
+            )
 
+        if llm is None:
+            st.error(
+                "Failed to initialize the language model. Please check your configuration."
+            )
+
+        # Create the ConversationalRetrievalChain instance using the llm instance
         chain = ConversationalRetrievalChain.from_llm(
-            llm,
+            llm=llm,
             retriever=result_retriever,
             memory=memory,
-            verbose=False,
+            verbose=True,
             max_tokens_limit=4000,
         )
 
         avatars = {
-            ChatProfileRoleEnum.HUMAN: "user",
-            ChatProfileRoleEnum.AI: "assistant",
+            ChatProfileRoleEnum.HUMAN.value: "user",
+            ChatProfileRoleEnum.AI.value: "assistant",
         }
 
         for msg in msgs.messages:
             st.chat_message(avatars[msg.type]).write(msg.content)
 
+# Get user input and generate response
 if user_query := st.chat_input(
     placeholder="Ask me anything!",
-    disabled=(not openai_api_key),
+    disabled=(not uploaded_files),
 ):
     st.chat_message("user").write(user_query)
 
     with st.chat_message("assistant"):
         retrieval_handler = PrintRetrievalHandler(st.empty())
         stream_handler = StreamHandler(st.empty())
-        response = chain.run(user_query, callbacks=[retrieval_handler, stream_handler])
+        response = chain.run(
+            user_query,
+            callbacks=[retrieval_handler, stream_handler],
+        )
+
+if selected_model and model_name:
+    st.sidebar.caption(f"🪄 Using `{model_name}` model")

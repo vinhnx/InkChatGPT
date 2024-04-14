@@ -3,6 +3,7 @@ sentence-transformers
 docarray
 langchain
 langchain_cohere
+langchain_openai
 streamlit
 streamlit_chat
 streamlit-extras
