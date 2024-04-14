@@ -1,12 +1,3 @@
----
-title: InkChatGPT
-emoji: 📚
-sdk: streamlit
-sdk_version: 1.25.0 # The latest supported version
-app_file: app.py
-pinned: true
----
-
 <p align="center">
   <img src="./assets/large_icon.png" height="200" alt="icon" />
 </p>
@@ -98,3 +89,15 @@ Contributions are welcome! Please open an issue or submit a pull request if you 
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
+
+--- 
+
+(this section is for Hugging Face)
+---
+title: InkChatGPT
+emoji: 📚
+sdk: streamlit
+sdk_version: 1.33.0 # The latest supported version
+app_file: app.py
+pinned: true
+---
