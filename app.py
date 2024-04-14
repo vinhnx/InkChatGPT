@@ -1,5 +1,5 @@
-from sklearn import model_selection
 import streamlit as st
+
 from langchain.chains.conversational_retrieval.base import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
 from langchain_cohere import ChatCohere
