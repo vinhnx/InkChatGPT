@@ -74,7 +74,7 @@ with st.sidebar:
                 model_name = COMMAND_R_LLM_MODEL
 
         msgs = StreamlitChatMessageHistory()
-        if len(msgs.messages) == 0:
+        if len(msgs.messages) == 0 or st.button("Clear message history"):
             msgs.clear()
             msgs.add_ai_message("""
             Hi, your uploaded document(s) had been analyzed. 
