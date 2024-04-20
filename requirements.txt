@@ -11,3 +11,5 @@ pypdf
 docx2txt
 unstructured
 tiktoken
+chainlit
+langchain_chroma
