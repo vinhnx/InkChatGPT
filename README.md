@@ -39,6 +39,13 @@ pinned: true
 
 `InkChatGPT` is a `Streamlit` application that allows users to upload PDF documents and engage in a conversational Q&A with a language model (`LLM`) based on the content of those documents.
 
+--
+
+New front end via Chainlit
+https://github.com/vinhnx/InkChatGPT/tree/try_chainlit
+
+--
+
 ### Features
 
 -   Upload any documents and start asking key information about it, currently supports: PDF, TXT, DOCX, EPUB
