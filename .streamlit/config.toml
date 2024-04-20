@@ -1,8 +1,0 @@
-[theme]
-base="dark"
-primaryColor="#bf4545"
-backgroundColor="#262626"
-textColor="#bfb38f"
-font="serif"
-
-hideTopBar = true

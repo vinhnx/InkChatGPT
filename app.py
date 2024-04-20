@@ -1,177 +1,117 @@
-import streamlit as st
+import chainlit as cl
 
-from langchain.chains.conversational_retrieval.base import ConversationalRetrievalChain
-from langchain.memory import ConversationBufferMemory
-from langchain_cohere import ChatCohere
-from langchain_community.chat_message_histories.streamlit import (
-    StreamlitChatMessageHistory,
-)
+from langchain.indexes import SQLRecordManager, index
+from langchain.prompts import ChatPromptTemplate
+from langchain.schema import StrOutputParser
+from langchain.schema.runnable import RunnableConfig, RunnablePassthrough
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.vectorstores.chroma import Chroma
+from langchain_community.document_loaders.pdf import PyMuPDFLoader
+from langchain_community.embeddings.huggingface import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
 
-from calback_handler import PrintRetrievalHandler, StreamHandler
-from chat_profile import ChatProfileRoleEnum
-from document_retriever import configure_retriever
-from llm_provider import LLMProviderEnum
+from calback_handler import PostMessageHandler
 
 # Constants
 GPT_LLM_MODEL = "gpt-3.5-turbo"
-COMMAND_R_LLM_MODEL = "command-r"
 
-# Properties
-uploaded_files = []
-api_key = ""
-result_retriever = None
-chain = None
-llm = None
-model_name = ""
 
-# Set up sidebar
-if "sidebar_state" not in st.session_state:
-    st.session_state.sidebar_state = "expanded"
+async def process_pdfs():
+    docs = []
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
 
-# Streamlit app configuration
-st.set_page_config(
-    page_title="InkChatGPT: Chat with Documents",
-    page_icon="📚",
-    initial_sidebar_state=st.session_state.sidebar_state,
-    menu_items={
-        "Get Help": "https://x.com/vinhnx",
-        "Report a bug": "https://github.com/vinhnx/InkChatGPT/issues",
-        "About": """InkChatGPT is a simple Retrieval Augmented Generation (RAG) application that allows users to upload PDF documents and engage in a conversational Q&A, with a language model (LLM) based on the content of those documents.
-        
-        GitHub: https://github.com/vinhnx/InkChatGPT""",
-    },
-)
+    files = []
+    # while files is None:
+    files = await cl.AskFileMessage(
+        content="Please select PDF files",
+        accept=["application/pdf"],
+        max_size_mb=20,
+        timeout=180,
+    ).send()
 
-with st.sidebar:
-    with st.container():
-        col1, col2 = st.columns([0.2, 0.8])
-        with col1:
-            st.image(
-                "./assets/app_icon.png",
-                use_column_width="always",
-                output_format="PNG",
-            )
-        with col2:
-            st.header(":books: InkChatGPT")
+    file = files[0]
 
-        # Model
-        selected_model = st.selectbox(
-            "Select a model",
-            options=[
-                LLMProviderEnum.OPEN_AI.value,
-                LLMProviderEnum.COHERE.value,
-            ],
-            index=None,
-            placeholder="Select a model...",
-        )
+    # show processing message
+    message = cl.Message(
+        content="Processing file. Please wait a moment...",
+        disable_feedback=True,
+    )
+    await message.send()
 
-        if selected_model:
-            api_key = st.text_input(f"{selected_model} API Key", type="password")
-            if selected_model == LLMProviderEnum.OPEN_AI:
-                model_name = GPT_LLM_MODEL
-            elif selected_model == LLMProviderEnum.COHERE:
-                model_name = COMMAND_R_LLM_MODEL
+    loader = PyMuPDFLoader(str(file.path))
+    documents = loader.load()
+    docs += text_splitter.split_documents(documents)
 
-        msgs = StreamlitChatMessageHistory()
-        if len(msgs.messages) == 0 or st.button("Clear message history"):
-            msgs.clear()
-            msgs.add_ai_message("""
-            Hi, your uploaded document(s) had been analyzed. 
-            
-            Feel free to ask me any questions. For example: you can start by asking me something like: 
-            
-            `What is this context about?`
-            
-            `Help me summarize this!`
-            """)
+    embeddings_model = HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2"
+    )
+    doc_search = Chroma.from_documents(docs, embeddings_model)
 
-        if api_key:
-            # Documents
-            uploaded_files = st.file_uploader(
-                label="Select files",
-                type=["pdf", "txt", "docx"],
-                accept_multiple_files=True,
-                disabled=(not selected_model),
-            )
+    namespace = "chromadb/my_documents"
+    record_manager = SQLRecordManager(
+        namespace, db_url="sqlite:///record_manager_cache.sql"
+    )
+    record_manager.create_schema()
 
-if api_key and not uploaded_files:
-    st.info("🌟 You can upload some documents to get started")
-
-# Check if a model is selected
-if not selected_model:
-    st.info(
-        "📺 Please select a model first, open the `Settings` tab from side bar menu to get started"
+    index_result = index(
+        docs,
+        record_manager,
+        doc_search,
+        cleanup="incremental",
+        source_id_key="source",
     )
 
-# Check if API key is provided
-if selected_model and len(api_key.strip()) == 0:
-    st.warning(
-        f"🔑 API key for {selected_model} is missing or invalid. Please provide a valid API key."
+    print(f"Indexing stats: {index_result}")
+
+    return doc_search
+
+
+@cl.on_chat_start
+async def on_chat_start():
+    template = """Answer the question based only on the following context:
+
+    {context}
+
+    Question: {question}
+    """
+    prompt = ChatPromptTemplate.from_template(template)
+
+    def format_docs(docs):
+        return "\n\n".join([d.page_content for d in docs])
+
+    doc_search = await process_pdfs()
+    retriever = doc_search.as_retriever()
+
+    model = ChatOpenAI(
+        model=GPT_LLM_MODEL,
+        streaming=True,
+        temperature=0,
     )
 
-# Process uploaded files
-if uploaded_files:
-    result_retriever = configure_retriever(uploaded_files, cohere_api_key=api_key)
+    runnable = (
+        {"context": retriever | format_docs, "question": RunnablePassthrough()}
+        | prompt
+        | model
+        | StrOutputParser()
+    )
 
-    if result_retriever is not None:
-        memory = ConversationBufferMemory(
-            memory_key="chat_history",
-            chat_memory=msgs,
-            return_messages=True,
-        )
+    message = cl.Message(content="Firing up the InkChatGPT bot...")
+    message.content = "Hi, I'm InkChatGPT. Feel free to ask me any question."
+    await message.send()
 
-        if selected_model == LLMProviderEnum.OPEN_AI:
-            llm = ChatOpenAI(
-                model=model_name,
-                api_key=api_key,
-                temperature=0,
-                streaming=True,
-            )
-        elif selected_model == LLMProviderEnum.COHERE:
-            llm = ChatCohere(
-                model=model_name,
-                temperature=0.3,
-                streaming=True,
-                cohere_api_key=api_key,
-            )
+    cl.user_session.set("runnable", runnable)
 
-        if llm is None:
-            st.error(
-                "Failed to initialize the language model. Please check your configuration."
-            )
 
-        # Create the ConversationalRetrievalChain instance using the llm instance
-        chain = ConversationalRetrievalChain.from_llm(
-            llm=llm,
-            retriever=result_retriever,
-            memory=memory,
-            verbose=True,
-            max_tokens_limit=4000,
-        )
+@cl.on_message
+async def on_message(message: cl.Message):
+    runnable = cl.user_session.get("runnable")
+    msg = cl.Message(content="")
 
-        avatars = {
-            ChatProfileRoleEnum.HUMAN.value: "user",
-            ChatProfileRoleEnum.AI.value: "assistant",
-        }
+    async with cl.Step(type="run", name="QA Assistant"):
+        async for chunk in runnable.astream(
+            message.content,
+            config=RunnableConfig(callbacks=[cl.LangchainCallbackHandler()]),
+        ):
+            await msg.stream_token(chunk)
 
-        for msg in msgs.messages:
-            st.chat_message(avatars[msg.type]).write(msg.content)
-
-# Get user input and generate response
-if user_query := st.chat_input(
-    placeholder="Ask me anything!",
-    disabled=(not uploaded_files),
-):
-    st.chat_message("user").write(user_query)
-
-    with st.chat_message("assistant"):
-        retrieval_handler = PrintRetrievalHandler(st.empty())
-        stream_handler = StreamHandler(st.empty())
-        response = chain.run(
-            user_query,
-            callbacks=[retrieval_handler, stream_handler],
-        )
-
-if selected_model and model_name:
-    st.sidebar.caption(f"🪄 Using `{model_name}` model")
+    await msg.send()
