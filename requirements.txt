@@ -4,6 +4,8 @@ docarray
 langchain
 langchain_cohere
 langchain_openai
+langchain-community
+langchain-core
 streamlit
 streamlit_chat
 streamlit-extras
